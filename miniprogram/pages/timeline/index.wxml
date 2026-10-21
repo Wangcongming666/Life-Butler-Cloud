@@ -1,0 +1,18 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}"><view class="header"><view class="title">日子，都有迹可循。</view><view class="subtitle">回看随记、生活记录和那些完成的小事。</view></view><scroll-view class="content" scroll-y="{{!detailEvent}}"><view class="body timeline-body"><view class="tabs"><button class="{{mode==='all'?'active':''}}" data-mode="all" bindtap="onMode">全部时间轴</button><button class="{{mode==='anniversary'?'active':''}}" data-mode="anniversary" bindtap="onMode">往年今日</button></view><picker wx:if="{{mode==='anniversary'}}" mode="date" value="{{anchor}}" bindchange="onDate"><view class="field picker-field">回看往年的 {{anchor}} ▾</view></picker><input class="field search" value="{{query}}" maxlength="80" placeholder="搜索回忆中的关键词" bindinput="onQuery" /><scroll-view scroll-x class="kinds"><view class="kind-strip"><button wx:for="{{kinds}}" wx:key="*this" class="{{kind===item?'selected':''}}" data-kind="{{item}}" bindtap="onKind">{{item}}</button></view></scroll-view><view class="hint">{{events.length}} 条记录{{mode==='anniversary'?' · 仅显示往年同月同日真实记录':''}}</view>
+  <view wx:for="{{visible}}" wx:key="id" class="event"><view class="event-dot"></view><view class="event-content"><view class="muted">{{item.timeLabel}} · {{item.kind}}</view><view class="card"><view class="section-title" data-id="{{item.id}}" bindtap="openDetail">{{item.title}}</view><text class="event-detail event-summary" data-id="{{item.id}}" bindtap="openDetail">{{item.detail}}</text><view wx:if="{{item.images.length}}" class="muted event-photo-count">{{item.images.length}} 张照片</view><view class="event-actions"><button class="small-action" data-id="{{item.id}}" bindtap="openDetail">查看完整记录 ›</button><button class="small-action" data-id="{{item.id}}" bindtap="open">查看原记录 ›</button></view></view></view></view><button wx:if="{{visible.length < events.length}}" class="secondary" bindtap="more">加载更多</button><view wx:if="{{!events.length}}" class="card empty">{{mode==='anniversary'?'这一天还没有往年的记录，继续记录就会慢慢积累。':'还没有对应记录。'}}</view>
+</view></scroll-view>
+  <view wx:if="{{detailEvent}}" class="info-dialog-mask" catchtouchmove="stopDialogTap" bindtap="closeDetail">
+    <view class="info-dialog" catchtap="stopDialogTap" aria-role="dialog" aria-label="时间轴记录详情">
+      <view class="info-dialog-header"><view class="info-dialog-title">{{detailEvent.title}}</view><button class="info-dialog-close" bindtap="closeDetail" aria-label="关闭记录详情">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body">
+        <view class="muted">{{detailEvent.timeLabel}} · {{detailEvent.kind}}</view>
+        <text class="event-detail" selectable>{{detailEvent.detail}}</text>
+        <view class="event-photos"><image wx:for="{{detailEvent.images}}" wx:key="*this" class="event-cover" src="{{item}}" mode="aspectFit" data-id="{{detailEvent.id}}" data-index="{{index}}" bindtap="preview" aria-label="查看第{{index + 1}}张照片" /></view>
+      </view></scroll-view>
+      <view class="info-dialog-footer actions"><button class="secondary" bindtap="closeDetail">关闭</button><button class="primary" data-id="{{detailEvent.id}}" bindtap="open">查看原记录</button></view>
+    </view>
+  </view>
+</view>
+
+<daily-checkin-dialog />

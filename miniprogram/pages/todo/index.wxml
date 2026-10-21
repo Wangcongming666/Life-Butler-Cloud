@@ -1,0 +1,118 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header">
+    <view class="eyebrow">LIFE BUTLER / 01</view>
+    <view class="title">把日子，慢慢理顺。</view>
+    <view class="subtitle">还有 {{pending}} 件小事，等你从容完成</view>
+  </view>
+  <scroll-view class="content" scroll-y="{{!formVisible && !galleryMounted}}" scroll-into-view="{{scrollTarget}}" scroll-with-animation>
+    <view class="body">
+      <view class="card tinted todo-create">
+        <view class="todo-create-copy"><view class="section-title">留一点时间给生活</view><view class="muted">每完成一件，轻松一点。</view></view>
+        <button class="primary todo-create-button" size="mini" hover-class="pressed" bindtap="openAdd">＋ 新增</button>
+      </view>
+      <view wx:if="{{alerts.length}}" class="card"><view class="section-title">近期提醒</view><view wx:for="{{alerts}}" wx:key="id" class="hint" data-id="{{item.id}}" data-type="{{item.type}}" bindtap="openAlert">{{item.title}} · {{item.message}} ›</view></view>
+      <view wx:if="{{notificationStateError}}" class="card hint"><view>通知设置暂不可用：{{notificationStateError}}</view><button class="small-action" disabled="{{!!remindingId}}" bindtap="refreshReminderStates">重试读取通知设置</button></view>
+      <view class="card controls">
+        <view class="todo-status-tabs"><button size="mini" class="status-tab {{filter === 1 ? 'status-tab-active' : ''}}" data-filter="1" bindtap="onStatus">未完成 {{pending - overdueCount}}</button><button size="mini" class="status-tab {{filter === 3 ? 'status-tab-active' : ''}}" data-filter="3" bindtap="onStatus">已逾期 {{overdueCount}}</button><button size="mini" class="status-tab {{filter === 2 ? 'status-tab-active' : ''}}" data-filter="2" bindtap="onStatus">已完成 {{completed}}</button></view>
+        <input class="field" value="{{query}}" maxlength="80" placeholder="搜索待办事项" bindinput="onQuery" />
+        <view class="todo-filter-row">
+          <view class="range-filter-controls"><button size="mini" class="filter-control range-checkbox" bindtap="toggleRangeFilter" aria-role="checkbox" aria-checked="{{rangeActive}}" aria-label="开启时间范围筛选"><view class="range-checkbox-box {{rangeActive ? 'checked' : ''}}"><view class="check-mark"></view></view></button><button size="mini" class="filter-control range-trigger {{rangeActive ? 'range-confirm' : ''}}" bindtap="openRange" aria-label="选择截止时间范围，当前{{rangeLabel}}"><text class="range-trigger-label">时间范围 ▾</text></button></view><button size="mini" class="filter-control" bindtap="toggleSort" aria-label="{{sort === 0 ? '当前正序，点击切换倒序' : '当前倒序，点击切换正序'}}">{{sort === 0 ? '正序 ↑' : '倒序 ↓'}}</button>
+        </view>
+      </view>
+      <view wx:for="{{todos}}" wx:key="id" class="card todo-card {{item.done ? 'todo-card-done' : ''}}">
+        <view class="todo-main">
+          <button class="check-target" size="mini" disabled="{{!!togglingId}}" hover-class="check-target-pressed" hover-stay-time="100" data-id="{{item.id}}" bindtap="toggle" aria-label="{{togglingId === item.id ? '正在同步完成状态' : item.done ? '标为未完成' : '标为已完成'}}"><view class="check {{item.done ? 'checked' : ''}}"><view class="check-mark"></view></view></button>
+          <view class="todo-copy">
+            <view class="todo-title">{{item.title}}</view>
+            <view wx:if="{{item.startText}}" class="todo-due muted">起始 {{item.startText}}</view><view class="todo-due muted {{item.overdue ? 'overdue' : ''}}">截止 {{item.dueText}}{{item.overdue ? ' · 已逾期' : ''}}</view>
+            <view wx:if="{{item.completedText}}" class="todo-due muted">完成 {{item.completedText}}</view>
+          </view>
+          <view wx:if="{{item.images.length}}" class="todo-album">
+            <image wx:if="{{item.images.length > 2}}" class="todo-album-back todo-album-back-far" src="{{item.images[2]}}" mode="aspectFill" lazy-load />
+            <image wx:if="{{item.images.length > 1}}" class="todo-album-back todo-album-back-near" src="{{item.images[1]}}" mode="aspectFill" lazy-load />
+            <swiper class="todo-album-swiper" current="{{imageIndexes[item.id] || 0}}" duration="320" data-id="{{item.id}}" bindchange="onTodoImageChange" bindtap="previewTodoImage" aria-label="查看{{item.images.length}}张待办图片，可左右滑动">
+              <swiper-item wx:for="{{item.images}}" wx:for-item="photo" wx:key="*this"><image class="todo-album-photo" src="{{photo}}" mode="aspectFill" lazy-load /></swiper-item>
+            </swiper>
+            <view class="todo-album-count">{{(imageIndexes[item.id] || 0) + 1}} / {{item.images.length}}</view>
+          </view>
+        </view>
+        <view class="todo-footer">
+          <text class="chip todo-status {{item.completedLate ? 'todo-status-late' : ''}}">{{item.done ? (item.completedLate ? '逾期完成' : '已完成') : item.overdue ? '已逾期' : item.notStarted ? '未开始' : '进行中'}}</text>
+          <view class="todo-actions">
+            <button class="small-action todo-action" size="mini" disabled="{{!!togglingId}}" hover-class="todo-action-pressed" data-id="{{item.id}}" bindtap="openEdit">编辑</button>
+            <button class="small-action delete-action todo-action todo-action-delete" size="mini" disabled="{{!!togglingId}}" hover-class="todo-action-pressed" data-id="{{item.id}}" bindtap="remove">删除</button>
+          </view>
+        </view>
+        <view wx:if="{{!item.done && !item.overdue}}" class="todo-notification-row">
+          <view class="todo-notification-copy"><view>到期通知</view><view class="muted">{{remindingId === item.id ? '正在保存…' : item.notificationText}}</view></view>
+          <switch checked="{{item.notificationEnabled}}" disabled="{{item.notificationLocked || !!remindingId || !!togglingId}}" color="#4c7c6d" data-id="{{item.id}}" bindchange="onNotificationChange" aria-label="{{item.notificationEnabled ? '关闭该待办的到期通知' : '开启该待办的到期通知'}}" />
+        </view>
+      </view>
+      <view wx:if="{{!todos.length}}" class="card empty"><view class="empty-title">{{filter === 2 ? '暂时没有已完成事项' : filter === 3 ? '暂时没有逾期事项' : '暂时没有待办'}}</view><view class="muted">{{filter === 2 ? '完成的事项会收纳在这里，也可调整搜索与时间范围。' : filter === 3 ? '超过截止时间且未完成的事项会显示在这里，也可调整筛选条件。' : '新增一件小事，或调整搜索与筛选条件。'}}</view></view>
+    </view>
+  </scroll-view>
+  <view wx:if="{{galleryMounted}}" class="todo-gallery-mask {{galleryOpen ? 'todo-gallery-open' : ''}}" catchtouchmove="stopRangeTap" bindtap="closeGallery">
+    <view class="todo-gallery-sheet" catchtap="stopRangeTap" aria-role="dialog" aria-label="左侧图片预览栏">
+      <view class="todo-gallery-header" bindtouchstart="onGalleryDragStart" bindtouchend="onGalleryDragEnd">
+        <view class="todo-gallery-handle"></view>
+        <view class="todo-gallery-toolbar"><view class="todo-gallery-heading"><view class="todo-gallery-title">{{galleryTitle}}</view><view class="muted">共 {{galleryImages.length}} 张图片</view></view><button class="todo-gallery-close" bindtap="closeGallery" aria-label="关闭图片相册">×</button></view>
+      </view>
+      <scroll-view class="todo-gallery-column" scroll-y="{{!zoomMounted}}" scroll-into-view="{{galleryScrollTarget}}" scroll-with-animation>
+        <view class="todo-gallery-list">
+          <view wx:for="{{galleryImages}}" wx:for-item="photo" wx:for-index="photoIndex" wx:key="*this" id="gallery-photo-{{photoIndex}}" class="todo-gallery-photo-card">
+            <view wx:if="{{galleryStates[photoIndex] === 'loading'}}" class="todo-gallery-loading">加载中…</view>
+            <view wx:if="{{galleryStates[photoIndex] === 'error'}}" class="todo-gallery-error"><text>加载失败</text><button class="secondary" data-index="{{photoIndex}}" catchtap="retryGalleryImage">重试</button></view>
+            <image wx:if="{{photo}}" class="todo-gallery-image {{galleryStates[photoIndex] === 'loaded' ? 'todo-gallery-image-loaded' : ''}}" src="{{photo}}" mode="widthFix" lazy-load data-index="{{photoIndex}}" bindload="onGalleryImageLoad" binderror="onGalleryImageError" bindtap="viewGalleryPhoto" aria-label="查看第{{photoIndex + 1}}张原图" />
+            <view class="todo-gallery-photo-number">{{photoIndex + 1}} / {{galleryImages.length}}</view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="todo-gallery-footer"><text class="muted">上下滑动 · 点击看大图</text></view>
+    </view>
+  </view>
+  <view wx:if="{{zoomMounted}}" class="todo-image-zoom {{zoomOpen ? 'todo-image-zoom-open' : ''}}" bindtap="closeImageZoom" catchtouchmove="stopRangeTap" aria-role="dialog" aria-label="放大图片">
+    <image class="todo-image-zoom-photo" src="{{zoomSource}}" mode="scaleToFill" style="{{zoomImageStyle}}transform:{{zoomTransform}};" catchtap="stopRangeTap" binderror="onZoomImageError" />
+    <view class="todo-image-zoom-toolbar"><text>{{galleryCurrent + 1}} / {{galleryImages.length}}</text><button class="todo-image-zoom-close" catchtap="closeImageZoom" aria-label="关闭大图返回图片列表">×</button></view>
+    <view wx:if="{{zoomError}}" class="todo-image-zoom-error">图片加载失败，点击空白返回列表</view>
+  </view>
+  <view wx:if="{{formVisible}}" class="todo-dialog-mask" catchtouchmove="stopRangeTap" bindtap="closeForm">
+      <view class="todo-dialog" catchtap="stopRangeTap" aria-role="dialog" aria-label="{{editingId ? '编辑待办' : '新建待办'}}">
+        <view class="todo-dialog-header"><view class="section-title">{{editingId ? '编辑待办' : '新建待办'}}</view><button class="todo-dialog-close" disabled="{{saving || choosing}}" bindtap="closeForm" aria-label="关闭弹窗">×</button></view><scroll-view class="todo-dialog-scroll" scroll-y>
+        <text class="label">待办内容</text>
+        <input class="field" cursor-spacing="120" value="{{title}}" maxlength="80" disabled="{{saving}}" placeholder="例如：整理书桌、浇花" bindinput="onTitle" />
+        <text class="label">起始日期与时间</text>
+        <view class="inline-pickers">
+          <picker mode="date" value="{{startDate}}" disabled="{{saving}}" bindchange="onStartDate"><view class="field picker-field">{{startDate}}</view></picker>
+          <picker mode="time" value="{{startTime}}" disabled="{{saving}}" bindchange="onStartTime"><view class="field picker-field">{{startTime}}</view></picker>
+        </view>
+        <text class="label">截止日期与时间</text>
+        <view class="inline-pickers">
+          <picker mode="date" value="{{date}}" disabled="{{saving}}" bindchange="onDate"><view class="field picker-field">{{date}}</view></picker>
+          <picker mode="time" value="{{time}}" disabled="{{saving}}" bindchange="onTime"><view class="field picker-field">{{time}}</view></picker>
+        </view>
+        <view class="row attachment-heading"><text class="label">图片附件</text><text class="attachment-count">{{images.length}} / 6</text></view>
+        <view class="draft-images">
+          <view wx:for="{{images}}" wx:key="*this" class="draft-image-slot"><view class="draft-image-box"><image class="draft-image" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="previewDraftImage" aria-label="预览第{{index + 1}}张图片" /><view wx:if="{{!saving}}" class="image-remove" data-index="{{index}}" catchtap="removeDraftImage" aria-role="button" aria-label="移除第{{index + 1}}张图片"><text class="remove-badge">×</text></view></view></view>
+          <view wx:if="{{images.length < 6}}" class="draft-image-slot"><view class="image-picker {{choosing || saving ? 'image-picker-busy' : ''}}" bindtap="chooseImages" hover-class="pressed" aria-role="button"><text class="image-picker-plus">＋</text><text>{{choosing ? '选择中…' : '添加图片'}}</text></view></view>
+        </view>
+        <view class="attachment-hint">支持相册或拍照，保存后同步到云端，单张最多 10MB。</view>
+        <view wx:if="{{formError}}" class="todo-form-error" aria-role="alert">{{formError}}</view></scroll-view><view class="actions todo-dialog-actions"><button class="secondary" disabled="{{saving || choosing}}" bindtap="closeForm">取消</button><button class="primary" loading="{{saving}}" disabled="{{saving || choosing}}" hover-class="pressed" bindtap="save">{{saving ? '保存中…' : '保存待办'}}</button></view>
+      </view>
+  </view>
+  <view wx:if="{{rangeVisible}}" class="range-mask" bindtap="closeRange">
+    <view class="range-sheet" catchtap="stopRangeTap" aria-role="dialog" aria-label="截止时间范围">
+      <view class="range-sheet-header"><button size="mini" class="filter-control" bindtap="closeRange">取消</button><view class="range-heading">时间范围</view><button size="mini" class="filter-control range-confirm" bindtap="applyRange">确定</button></view>
+      <scroll-view scroll-y class="range-sheet-content">
+        <view class="range-endpoint"><text class="range-endpoint-label">开始</text><picker mode="date" value="{{rangeStartDate}}" data-field="rangeStartDate" bindchange="onRangeChange"><view class="range-value">{{rangeStartDate}} ▾</view></picker><picker mode="time" value="{{rangeStartTime}}" data-field="rangeStartTime" bindchange="onRangeChange"><view class="range-value">{{rangeStartTime}} ▾</view></picker></view>
+        <view class="range-endpoint"><text class="range-endpoint-label">结束</text><picker mode="date" value="{{rangeEndDate}}" data-field="rangeEndDate" bindchange="onRangeChange"><view class="range-value">{{rangeEndDate}} ▾</view></picker><picker mode="time" value="{{rangeEndTime}}" data-field="rangeEndTime" bindchange="onRangeChange"><view class="range-value">{{rangeEndTime}} ▾</view></picker></view>
+        <view class="range-hint">按截止时间筛选 · 今晚 24:00 即次日 00:00</view>
+        <view wx:if="{{rangeError}}" class="range-error">{{rangeError}}</view>
+        <view class="range-actions"><button size="mini" class="secondary range-action" bindtap="resetRange">今天剩余</button><button size="mini" class="secondary range-action" bindtap="clearRange">不限时间</button></view>
+        <view class="range-applied">当前筛选：{{rangeLabel}}</view>
+      </scroll-view>
+    </view>
+  </view>
+</view>
+
+<daily-checkin-dialog />

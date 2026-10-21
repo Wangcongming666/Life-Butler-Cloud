@@ -1,0 +1,84 @@
+page { height: 100%; background: #f4f7f6; color: #273d37; font-size: 28rpx; }
+/* 所有主题沿用同一布局，只更换表面、文字与强调色。 */
+.screen{--accent:#4c7c6d;--soft:#edf3f0;--surface:#ffffff;--page:#f4f7f6;--ink:#273d37;--muted:#61776d;--border:#e5ece8;background:var(--page);color:var(--ink)}
+.screen.theme-blue{--accent:#4d7696;--soft:#e8f0f6}
+.screen.theme-rose{--accent:#946176;--soft:#f5eaee}
+.screen.theme-dark{--page:#18221e;--surface:#24312a;--ink:#e3eee7;--muted:#b2c5b8;--border:#3a4b40;--soft:#304338;--accent:#557f6b}
+.screen.theme-dark.theme-blue{--accent:#507d9b;--soft:#293e4e}
+.screen.theme-dark.theme-rose{--accent:#99697f;--soft:#49333e}
+.screen .primary{background:var(--accent);color:#fff}
+.screen .secondary,.screen .chip{background:var(--soft);color:var(--ink)}
+.screen .card,.screen .stat,.screen .note-card{background:var(--surface)}
+.screen .field{background:var(--soft);color:var(--ink)}
+.screen .muted,.screen .subtitle,.screen .label,.screen .hint,.screen .small-action{color:var(--muted)}
+.screen .tinted{background:var(--soft)}
+.theme-dark .note-title,.theme-dark .tool-name,.theme-dark .exam-name,.theme-dark .spend,.theme-dark .timer-digits{color:var(--ink)}
+.theme-dark .note-comment,.theme-dark .note-time,.theme-dark .result-detail,.theme-dark .detail,.theme-dark .account-summary,.theme-dark .summary-month{color:var(--muted)}
+.theme-dark .schedule-entry,.theme-dark .tool-tile,.theme-dark .account-summary,.theme-dark .result,.theme-dark .stat,.theme-dark .photo-swiper,.theme-dark .note-actions button,.theme-dark .category-button,.theme-dark .filter-bar .filter,.theme-dark .gallery-arrow{background:var(--soft);color:var(--ink)}
+.theme-dark .tool-background{opacity:.18}.theme-dark .tab-track{color:var(--ink)}
+.theme-dark .danger,.theme-dark .delete-action{background:#49312e;color:#ffbdad}
+.theme-dark .photo-toolbar .clear-photos{background:#49312e;color:#ffbdad}
+.theme-dark .selected,.theme-dark .category-selected,.theme-dark .filter-bar .selected{background:var(--accent);color:#fff}
+.theme-dark .day-head,.theme-dark .period-label,.theme-dark .board-head,.theme-dark .board-body{background:var(--surface);color:var(--ink)}
+.font-large{font-size:32rpx}.font-large .title{font-size:52rpx}.font-large .section-title,.font-large .note-title{font-size:35rpx}.font-large .field,.font-large .primary,.font-large .secondary{font-size:32rpx}.font-large .muted,.font-large .hint,.font-large .subtitle,.font-large .label,.font-large .detail{font-size:28rpx}.font-large .tool-name{font-size:26rpx}.font-large .recipe-text,.font-large .event-detail,.font-large .record-note,.font-large .note-comment{font-size:32rpx}
+view, text, input, textarea, button, scroll-view { box-sizing: border-box; }
+button { margin: 0; font-size: 28rpx; border-radius: 22rpx; }
+button::after { border: 0; }
+.screen { height: 100vh; display: flex; flex-direction: column; }
+.header { flex-shrink: 0; padding: 32rpx 36rpx 26rpx; }
+.eyebrow { font-size: 20rpx; color: #6b8d81; letter-spacing: 4rpx; margin-bottom: 12rpx; }
+.title { font-size: 48rpx; font-weight: 600; line-height: 1.3; }
+.subtitle { color: #7a8b84; font-size: 25rpx; margin-top: 12rpx; line-height: 1.6; }
+.content { flex: 1; min-height: 0; height: 0; }
+/* 自定义导航固定在底部，给最后一项内容留下足够的滚动空间。 */
+.body { padding: 0 30rpx 184rpx; padding-bottom: calc(184rpx + env(safe-area-inset-bottom)); }
+.card { background: #fff; border-radius: 28rpx; padding: 30rpx; margin-bottom: 24rpx; box-shadow: 0 8rpx 30rpx rgba(39,61,55,.035); }
+.tinted { background: #e1eee8; }
+.blue { background: #e4edf2; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.section-title { font-size: 30rpx; font-weight: 600; }
+.muted { color: #7a8b84; font-size: 24rpx; line-height: 1.6; }
+.big-number { font-size: 60rpx; font-weight: 600; line-height: 1.4; margin: 12rpx 0; word-break: break-all; }
+.label { display: block; color: #61776d; font-size: 25rpx; margin: 24rpx 0 12rpx; }
+.field { width: 100%; height: 92rpx; padding: 0 24rpx; border-radius: 18rpx; background: #f3f6f5; font-size: 28rpx; color: #273d37; }
+.picker-field { line-height: 92rpx; }
+.textarea { height: 150rpx; padding: 24rpx; line-height: 1.5; }
+.primary, .secondary, .danger { min-height: 92rpx; line-height: 92rpx; padding: 0 28rpx; }
+.primary { background: #4c7c6d; color: #fff; }
+.secondary { background: #edf3f0; color: #426b5e; }
+.danger { background: #faeeeb; color: #aa5849; }
+.actions { display: flex; gap: 16rpx; margin-top: 28rpx; }
+.actions button { flex: 1; }
+.pressed { opacity: .72; transform: scale(.98); }
+button { transition: transform .15s ease, opacity .15s ease; }
+.empty { padding: 60rpx 24rpx; text-align: center; }
+.empty-title { font-size: 30rpx; margin-bottom: 12rpx; }
+.chip { font-size: 22rpx; color: #527665; background: #edf4ef; padding: 8rpx 16rpx; border-radius: 12rpx; flex-shrink: 0; }
+.stat-grid { display: flex; flex-wrap: wrap; gap: 18rpx; margin: 24rpx 0; }
+.stat { width: calc(50% - 9rpx); background: #fff; border-radius: 24rpx; padding: 26rpx; }
+.stat-number { font-size: 38rpx; font-weight: 600; margin-top: 10rpx; word-break: break-all; }
+.hint { margin: 24rpx 0; font-size: 23rpx; line-height: 1.7; color: #7a8b84; }
+.inline-pickers { display: flex; gap: 16rpx; }
+.inline-pickers picker { flex: 1; min-width: 0; }
+.small-action { min-width: 88rpx; min-height: 88rpx; padding: 0 12rpx; line-height: 88rpx; font-size: 24rpx; background: transparent; color: #527665; }
+.delete-action { color: #aa5849; }
+
+.cloud-gate{min-height:100vh;box-sizing:border-box;padding:180rpx 48rpx 80rpx;background:#f4f7f6;color:#263d34}.cloud-gate .hint{margin:28rpx 0 48rpx;line-height:1.7;word-break:break-all}
+/* 通用信息弹窗：录入和完整详情不挤占列表，页头与操作区始终可见。 */
+.info-dialog-mask { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); background: rgba(0,0,0,.4); }
+.info-dialog { display: flex; flex-direction: column; width: 100%; max-width: 680rpx; max-height: 88vh; min-height: 0; overflow: hidden; border-radius: 24rpx; background: var(--surface,#fff); color: var(--ink,#273d37); box-shadow: 0 16rpx 56rpx rgba(0,0,0,.14); }
+.info-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; flex-shrink: 0; padding: 12rpx 12rpx 8rpx 28rpx; }
+.info-dialog-title { flex: 1; min-width: 0; font-size: 32rpx; font-weight: 600; line-height: 1.5; word-break: break-all; }
+.info-dialog .info-dialog-close { flex: 0 0 44px; width: 44px; height: 44px; min-height: 44px; line-height: 44px; margin: 0; padding: 0; background: transparent; color: var(--muted,#61776d); font-size: 26px; }
+.info-dialog-scroll { flex: 0 1 auto; min-height: 0; height: 54vh; }
+.info-dialog-body { padding: 0 28rpx 24rpx; }
+.info-dialog .label { margin-top: 20rpx; }
+.info-dialog-footer { flex-shrink: 0; padding: 20rpx 28rpx 28rpx; border-top: 1rpx solid var(--border,#e5ece8); }
+.info-dialog-footer .actions { margin-top: 0; }
+.info-dialog-footer button { min-width: 0; }.info-dialog-footer > button { width: 100%; }
+.info-dialog-error { flex-shrink: 0; padding: 16rpx 28rpx; background: #fbefec; color: #a34036; line-height: 1.6; font-size: 25rpx; word-break: break-all; }
+.theme-dark .info-dialog-error { background: #49312e; color: #ffbdb0; }
+.info-dialog .detail-value, .info-dialog .record-note { white-space: pre-wrap; word-break: break-all; line-height: 1.7; }
+.info-dialog .field, .info-dialog textarea { max-width: 100%; }
+.font-large .info-dialog-title { font-size: 36rpx; }
+.info-dialog .info-dialog-footer .actions, .info-dialog .info-dialog-footer.actions { margin-top: 0; }

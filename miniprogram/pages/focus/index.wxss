@@ -1,0 +1,11 @@
+.focus-body { padding-bottom: calc(48rpx + env(safe-area-inset-bottom)); }
+.timer-card { text-align: center; padding: 32rpx; }
+.mode-tabs { display: flex; background: #edf3f0; border-radius: 18rpx; padding: 6rpx; gap: 8rpx; }
+.mode-tabs button { flex: 1; line-height: 84rpx; background: transparent; font-size: 28rpx; color: #61776d; }
+.mode-tabs .active { background: #fff; color: #3f7567; }
+.timer-status { color: #61776d; margin: 48rpx 0 12rpx; }
+.timer-digits { font-size: 100rpx; font-weight: 600; color: #3f7567; font-variant-numeric: tabular-nums; margin-bottom: 36rpx; }
+.timer-card .label { text-align: left; }
+.session { padding: 22rpx 0; border-bottom: 1rpx solid #edf2ef; }
+
+.timer-config-scroll { height: 24vh; }

@@ -1,0 +1,1 @@
+{"life_records":[{"name":"owner_generation_id","fields":[{"field":"owner","order":"asc"},{"field":"generation","order":"asc"},{"field":"_id","order":"asc"}]}],"life_todo_reminders":[{"name":"status_remindAt","fields":[{"field":"status","order":"asc"},{"field":"remindAt","order":"asc"}]}]}

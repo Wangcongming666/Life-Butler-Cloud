@@ -1,0 +1,33 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header"><view class="title">我的</view><view class="subtitle">生活，有自己的节奏。</view></view>
+  <scroll-view class="content" scroll-y="{{!exportVisible}}">
+    <view class="body">
+      <view wx:if="{{dataError}}" class="card"><view class="section-title">统计暂不可用</view><view class="hint">本地数据读取异常，请先使用下方导出功能备份原始记录。</view></view>
+      <block wx:else>
+        <view class="card overview-card">
+          <view class="section-title">生活概览</view>
+          <view class="month-caption muted">本月支出 · {{stats.monthCount}} 笔</view>
+          <view class="month-amount">¥ {{stats.monthTotal}}</view>
+          <view class="overview-totals muted">累计支出 ¥ {{stats.totalExpense}} · 记账 {{stats.expenseCount}} 笔</view>
+          <view class="todo-overview"><view class="row"><view class="section-title">待办进度</view><text class="muted">{{completion}}%</text></view><progress class="progress" percent="{{completion}}" stroke-width="6" activeColor="#739d88" backgroundColor="#edf3ef" border-radius="6" /><view class="todo-counts"><view><view class="stat-number">{{stats.pendingTodos}}</view><view class="muted">未完成</view></view><view><view class="stat-number">{{stats.completedTodos}}</view><view class="muted">已完成</view></view><view><view class="stat-number">{{stats.totalTodos}}</view><view class="muted">全部待办</view></view></view></view>
+        </view>
+      </block>
+      <view class="card"><view class="section-title">常用功能</view><view class="personal-grid"><button class="secondary personal-entry" hover-class="pressed" bindtap="openNotes"><view>我的随记</view><view class="entry-caption">{{dataError ? '—' : stats.noteCount}} 条记录</view></button><button class="secondary personal-entry" hover-class="pressed" data-page="settings" bindtap="openPersonal"><view>个性化设置</view><view class="entry-caption">外观与偏好</view></button><button class="secondary" hover-class="pressed" data-page="review" bindtap="openPersonal">生活回顾</button><button class="secondary" hover-class="pressed" data-page="timeline" bindtap="openPersonal">时间轴</button><button class="secondary" hover-class="pressed" data-page="loans" bindtap="openPersonal">借还管理</button><button class="secondary" hover-class="pressed" data-page="food" bindtap="openPersonal">饮食菜谱</button></view></view>
+      <view class="card">
+        <view class="section-title">数据由你掌握</view>
+        <view class="hint">建议定期备份，保留文字与照片的完整记录。</view>
+        <view class="data-grid"><button class="secondary" hover-class="pressed" bindtap="exportData">导出数据</button><button class="primary" hover-class="pressed" bindtap="openBackup">备份与恢复</button><button class="secondary" hover-class="pressed" bindtap="openSearch">全局搜索</button><button class="danger" hover-class="pressed" bindtap="clearData">清空数据</button></view>
+      </view>
+      <view class="card sync-card"><view class="sync-heading"><view class="sync-description"><view class="section-title">云端同步</view><view class="sync-status muted" aria-live="polite">{{cloudMessage}}</view><view wx:if="{{cloudLastSync}}" class="sync-time muted">最近同步：{{cloudLastSync}}</view></view><button class="secondary sync-button" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">立即同步</button></view><view class="hint sync-hint">同一微信账号，手机与 PC 共享记录。保存需要联网，离线时可查看已加载的缓存。</view></view>
+      <view class="footer">生活管家 1.0 · 简单记录，安心生活</view>
+    </view>
+  </scroll-view>
+  <view wx:if="{{exportVisible}}" class="info-dialog-mask" catchtouchmove="stopTouch"><view class="info-dialog" aria-role="dialog" aria-modal="true" aria-label="JSON 备份文本">
+    <view class="info-dialog-header"><view class="info-dialog-title">JSON 备份文本</view><button class="info-dialog-close" bindtap="closeExport" aria-label="关闭弹窗">×</button></view>
+    <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body"><view class="hint">此文本只包含文字和图片路径。需要跨设备保留照片，请使用「备份与恢复」生成含照片的完整文件。</view><text class="json-text" selectable>{{jsonText}}</text></view></scroll-view>
+    <view class="info-dialog-footer"><view class="actions"><button class="secondary" bindtap="closeExport">关闭</button><button class="primary" hover-class="pressed" bindtap="copyExport">复制全部 JSON</button></view></view>
+  </view></view>
+</view>
+
+<daily-checkin-dialog />

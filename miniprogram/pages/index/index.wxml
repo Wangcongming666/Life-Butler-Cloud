@@ -1,0 +1,8 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="entry-screen">
+  <view class="section-title">生活管家</view>
+  <view class="subtitle">{{failed ? '未能进入首页，请点击下方重试' : '正在进入首页…'}}</view>
+  <button wx:if="{{failed}}" class="primary retry-button" bindtap="goHome" hover-class="pressed">进入首页</button>
+</view>
+
+<daily-checkin-dialog />

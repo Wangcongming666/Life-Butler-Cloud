@@ -1,0 +1,40 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header"><view class="account-header-row"><view class="title">我的账本</view><button class="primary account-add-button" size="mini" hover-class="pressed" bindtap="openAdd">＋ 记一笔</button></view><view class="subtitle">记下日常开销，让生活心里有数。</view><view class="account-top-actions"><button class="secondary" bindtap="openMonthlyReview">月度回顾</button><button class="secondary" bindtap="openBudget">{{showAll ? '本月预算' : '所选月份预算'}}</button></view></view>
+  <scroll-view class="content" scroll-y="{{!formVisible}}" scroll-into-view="{{scrollTarget}}" scroll-with-animation lower-threshold="160" bindscrolltolower="loadMore">
+    <view class="body">
+      <view class="card account-summary">
+        <view class="summary-top"><view class="summary-month">{{monthLabel}}</view><picker mode="date" fields="month" start="1970-01" end="2100-12" value="{{selectedMonth}}" bindchange="onMonth"><view class="month-picker" aria-label="选择账单月份">选择月份 ▾</view></picker></view>
+        <view class="summary-caption">{{showAll ? '累计支出' : '当月支出'}}</view><view class="summary-total"><text class="currency">¥</text> {{monthTotal}}</view><view class="summary-bottom">共 {{monthCount}} 笔记录 · 按记账日期统计</view>
+      </view>
+      <view wx:if="{{categoryStats.length}}" class="card billing-statistics">
+        <view class="section-title">{{showAll ? '累计分类支出' : '月度分类支出'}}</view>
+        <view wx:for="{{categoryStats}}" wx:key="name" class="billing-category"><text>{{item.name}}</text><text class="billing-category-amount">¥ {{item.amount}}</text></view>
+      </view>
+      <view class="row list-heading"><view class="section-title">支出明细</view><view class="row"><text class="muted">全部月份</text><switch color="#4c7c6d" checked="{{showAll}}" bindchange="onScope" aria-label="显示全部月份账目" /></view></view>
+      <block wx:for="{{expenses}}" wx:key="id">
+        <view wx:if="{{item.showDay}}" class="day-divider">{{item.dayLabel}}</view>
+        <view class="card expense-card {{editingId === item.id ? 'expense-selected' : ''}}">
+          <view class="expense-main"><view class="category-icon category-{{item.tone}}">{{item.icon}}</view><view class="expense-copy"><view class="expense-category">{{item.category}}</view><view class="expense-note">{{item.note || '日常支出'}}</view></view><view class="expense-amount">−<text class="amount-currency">¥</text> {{item.amountText}}</view></view>
+          <view class="expense-footer"><view class="expense-timestamps"><text class="expense-time">记账 {{item.dateText}}</text><text class="expense-updated">最后更新 {{item.updatedText}}</text></view><view class="expense-actions"><button size="mini" class="record-action record-edit" hover-class="pressed" data-id="{{item.id}}" bindtap="openEdit">编辑</button><button size="mini" class="record-action record-delete" hover-class="pressed" data-id="{{item.id}}" bindtap="remove">删除</button></view></view>
+        </view>
+      </block>
+      <view wx:if="{{expenses.length}}" class="billing-pagination"><text>已显示 {{expenses.length}} / {{monthCount}} 笔</text><button wx:if="{{hasMore}}" size="mini" class="secondary load-more" bindtap="loadMore">继续向下滑动，或点击加载更多</button><text wx:if="{{!hasMore}}">已显示全部账单</text></view>
+      <view wx:if="{{!expenses.length}}" class="card empty"><view class="empty-title">{{showAll ? '账本还是空白的' : '这个月还没有账单'}}</view><view class="muted">{{showAll ? '从第一笔支出开始，认识自己的消费。' : '可选择其他月份，或打开全部月份查看历史。'}}</view></view>
+    </view>
+  </scroll-view>
+  <view wx:if="{{formVisible}}" class="account-dialog-mask" catchtouchmove="stopFormTap" bindtap="closeForm">
+    <view class="account-dialog" catchtap="stopFormTap" aria-role="dialog" aria-label="{{editingId ? '编辑支出' : '记一笔'}}">
+      <view class="account-dialog-header"><view class="section-title">{{editingId ? '编辑支出' : '记一笔'}}</view><button class="account-dialog-close" disabled="{{saving}}" bindtap="closeForm" aria-label="关闭弹窗">×</button></view>
+      <scroll-view class="account-dialog-scroll" scroll-y>
+        <text class="label">金额（元）</text><input class="field amount-input" type="digit" maxlength="10" disabled="{{saving}}" cursor-spacing="120" value="{{amount}}" placeholder="0.00" bindinput="onAmount" />
+        <text class="label">分类</text><picker disabled="{{saving}}" range="{{categories}}" value="{{categoryIndex}}" bindchange="onCategory"><view class="field picker-field">{{categories[categoryIndex]}} ▾</view></picker>
+        <text class="label">备注（选填）</text><input class="field" disabled="{{saving}}" cursor-spacing="120" maxlength="120" value="{{note}}" placeholder="例如：一杯咖啡，开启今天" bindinput="onNote" />
+        <text class="label">记账时间</text><view class="inline-pickers"><picker disabled="{{saving}}" mode="date" start="1970-01-01" end="2100-12-31" value="{{date}}" bindchange="onDate"><view class="field picker-field">{{date}} ▾</view></picker><picker disabled="{{saving}}" mode="time" value="{{time}}" bindchange="onTime"><view class="field picker-field">{{time}} ▾</view></picker></view>
+      </scroll-view>
+      <view class="actions account-dialog-actions"><button class="secondary" disabled="{{saving}}" bindtap="closeForm">取消</button><button class="primary" loading="{{saving}}" disabled="{{saving}}" hover-class="pressed" bindtap="save">{{saving ? '保存中…' : editingId ? '保存修改' : '保存支出'}}</button></view>
+    </view>
+  </view>
+</view>
+
+<daily-checkin-dialog />

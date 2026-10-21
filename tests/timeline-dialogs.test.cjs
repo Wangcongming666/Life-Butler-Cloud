@@ -1,0 +1,15 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {MemoryRepository}=require('./helpers/memory-cloud.cjs'),{createService}=require('../cloudfunctions/lifeButler/service'),{createClient}=require('./helpers/client.cjs');
+const event=(id,index=0)=>({currentTarget:{dataset:{id,index}}});
+async function setup(){const c=createClient(createService(new MemoryRepository()));await c.sync.start();const p=c.page('timeline');p.onLoad({});await p.onShow();return {c,p};}
+test('timeline list keeps summaries while full text and photos live in an independent scrollable dialog',()=>{
+ const w=fs.readFileSync(path.join(__dirname,'../miniprogram/pages/timeline/index.wxml'),'utf8');const list=w.slice(w.indexOf('<scroll-view class="content"'),w.indexOf('  <view wx:if="{{detailEvent}}"'));
+ assert.match(w,/scroll-y="{{!detailEvent}}"/);assert.match(list,/event-detail event-summary/);assert.doesNotMatch(list,/event-cover/);assert.match(list,/bindtap="openDetail"/);assert.match(w,/class="info-dialog-mask"/);assert.match(w,/class="info-dialog-scroll" scroll-y/);assert.match(w,/{{detailEvent.detail}}/);assert.match(w,/{{detailEvent.images}}/);assert.match(w,/data-id="{{detailEvent.id}}" bindtap="open"/);
+});
+test('timeline details preserve complete records and photos, filters and source navigation',async()=>{
+ const {c,p}=await setup();c.files.set('/tmp/a.jpg','YQ==');c.files.set('/tmp/b.jpg','Yg==');const note='长篇详情\n'.repeat(200);await c.store.saveLifeRecord({type:'homework',title:'作业记录',date:'2026-10-22',time:'20:00',note,images:['/tmp/a.jpg','/tmp/b.jpg']});await p.refresh();p.onQuery({detail:{value:'作业记录'}});p.onKind({currentTarget:{dataset:{kind:'生活'}}});p.setData({anchor:'2026-10-19',limit:80});const record=p.data.events[0],state={query:p.data.query,kind:p.data.kind,mode:p.data.mode,anchor:p.data.anchor,limit:p.data.limit};p.openDetail(event(record.id));assert.equal(p.data.detailEvent.detail,'作业 · '+note.trim());assert.equal(p.data.detailEvent.images.length,2);
+ let imagePreview;c.wx.previewImage=o=>{imagePreview=o;};await p.preview(event(record.id,1));assert.equal(imagePreview.current,'/tmp/b.jpg');let route;c.wx.navigateTo=o=>{route=o.url;};p.open(event(record.id));assert.equal(route,record.route);p.closeDetail();assert.equal(p.data.detailEvent,null);for(const [key,value]of Object.entries(state))assert.equal(p.data[key],value,key);p.onUnload();
+});
+test('timeline open detail tracks cloud refresh and dismisses removed records',async()=>{
+ const {c,p}=await setup();await c.store.saveLifeRecord({type:'shopping',title:'购物',note:'原备注'});await p.refresh();const record=p.data.events[0],id=c.store.read().life.records[0].id;p.openDetail(event(record.id));await c.store.saveLifeRecord({...c.store.read().life.records[0],note:'更新后的完整备注'});await p.refresh();assert.equal(p.data.detailEvent.detail,'购物 · 更新后的完整备注');await c.store.removeLifeRecord(id);await p.refresh();assert.equal(p.data.detailEvent,null);p.openDetail(event('missing'));assert.equal(p.data.detailEvent,null);p.onUnload();
+});

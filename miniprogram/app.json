@@ -1,0 +1,26 @@
+{
+  "pages": ["pages/todo/index", "pages/account/index", "pages/tools/index", "pages/profile/index", "pages/schedule/index", "pages/notes/index", "pages/index/index", "pages/life/index", "pages/focus/index", "pages/search/index", "pages/backup/index", "pages/loans/index", "pages/food/index", "pages/review/index", "pages/timeline/index", "pages/settings/index", "pages/checkin/index"],
+  "window": {
+    "navigationBarTitleText": "生活管家",
+    "navigationBarBackgroundColor": "#F4F7F6",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F4F7F6"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#879591",
+    "selectedColor": "#3F7567",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/todo/index", "text": "待办" },
+      { "pagePath": "pages/account/index", "text": "记账" },
+      { "pagePath": "pages/tools/index", "text": "工具" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "usingComponents": {"daily-checkin-dialog":"/components/daily-checkin-dialog/index"},
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

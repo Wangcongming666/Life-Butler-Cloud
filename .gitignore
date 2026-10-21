@@ -1,0 +1,16 @@
+# Developer-specific WeChat and cloud configuration
+project.config.json
+project.private.config.json
+miniprogram/utils/cloud.js
+cloudfunctions/lifeButler/environment.js
+
+# Dependencies and local credentials
+node_modules/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+.DS_Store
+Thumbs.db

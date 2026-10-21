@@ -1,0 +1,29 @@
+.checkin-body { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+.checkin-status { font-size: 14px; color: var(--accent); font-weight: 600; }
+.checkin-caption { margin-top: 24px; color: var(--muted); font-size: 14px; }
+.checkin-streak { margin: 8px 0 24px; font-size: 56px; font-weight: 600; line-height: 1.2; }
+.checkin-streak text { font-size: 18px; font-weight: 400; }
+.checkin-hero button { width: 100%; }
+.checkin-hero button[disabled] { background: var(--surface); color: var(--accent); }
+.checkin-totals { display: flex; justify-content: space-between; }
+.checkin-totals .card { flex: 0 0 calc(50% - 6px); width: calc(50% - 6px); min-width: 0; }
+.checkin-total { margin-top: 8px; font-size: 28px; font-weight: 600; }
+.checkin-total text { font-size: 14px; font-weight: 400; }
+.checkin-month-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.checkin-month-row picker { flex: 1; min-width: 0; }
+.checkin-month-label { text-align: center; font-size: 16px; font-weight: 600; line-height: 44px; }
+.checkin-month-row .checkin-month-button { flex: 0 0 44px; width: 44px; height: 44px; min-height: 44px; margin: 0; padding: 0; background: transparent; color: var(--ink); font-size: 28px; line-height: 44px; }
+.checkin-month-button[disabled] { opacity: .3; }
+.checkin-calendar-grid { display: flex; flex-wrap: wrap; }
+.checkin-weekday, .checkin-day { flex: 0 0 14.285714%; width: 14.285714%; text-align: center; }
+.checkin-weekday { color: var(--muted); font-size: 12px; line-height: 36px; }
+.checkin-day { position: relative; display: flex; align-items: center; justify-content: center; height: 44px; font-size: 14px; border-radius: 10px; }
+.checkin-day-signed { background: var(--soft); color: var(--accent); font-weight: 600; }
+.checkin-day-mark { position: absolute; bottom: 1px; font-size: 10px; line-height: 12px; }
+.checkin-day-today { box-shadow: inset 0 0 0 1px var(--accent); }
+.checkin-day-future { color: var(--muted); opacity: .4; }
+.checkin-calendar-footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.checkin-quote-text { font-size: 17px; line-height: 1.8; }
+.checkin-quote-source { margin-top: 8px; text-align: right; }
+.checkin-help { padding: 0 4px; }
+.font-large .checkin-day, .font-large .checkin-status { font-size: 16px; }

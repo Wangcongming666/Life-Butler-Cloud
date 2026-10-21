@@ -1,0 +1,126 @@
+/* 首屏以课表为主：周次固定在上方，管理操作集中在底部。 */
+.schedule-header { padding: 20rpx 30rpx 12rpx; }
+.schedule-header .title { font-size: 36rpx; line-height: 1.3; }
+.schedule-header .subtitle { margin-top: 4rpx; font-size: 22rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.schedule-body { padding: 0 24rpx 24rpx; }
+.delete-course, .confirm-import { margin-top: 24rpx; }
+.schedule-weekbar { flex-shrink: 0; padding: 0 24rpx 12rpx; }
+.week-toolbar { display: flex; align-items: center; gap: 8rpx; }
+.week-toolbar .week-step { flex-shrink: 0; width: 96rpx; min-width: 0; min-height: 88rpx; line-height: 88rpx; font-size: 24rpx; color: var(--ink); background: var(--soft); padding: 0; margin: 0; }
+.week-toolbar button[disabled] { opacity: .4; }
+.week-picker { flex: 1; min-width: 0; text-align: center; }
+.week-title { padding: 0; font-size: 30rpx; font-weight: 600; line-height: 1.4; }
+.week-range { font-size: 22rpx; color: var(--muted); margin-top: 4rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.week-toolbar .current-week { flex-shrink: 0; width: 88rpx; min-width: 0; padding: 0; margin: 0; min-height: 88rpx; line-height: 88rpx; font-size: 24rpx; color: var(--ink); background: var(--surface); }
+.week-toolbar .at-current-week { background: var(--accent); color: #fff; }
+.week-context { display: flex; justify-content: space-between; gap: 16rpx; margin-top: 4rpx; line-height: 1.5; }
+.week-status, .swipe-hint { font-size: 22rpx; color: var(--muted); }
+.swipe-hint { flex-shrink: 0; }
+.schedule-dock { display: flex; flex-shrink: 0; gap: 8rpx; padding: 12rpx 24rpx; padding-bottom: calc(12rpx + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1rpx solid var(--border); }
+.schedule-dock .dock-action { flex: 1; min-width: 0; min-height: 88rpx; line-height: 88rpx; margin: 0; padding: 0 4rpx; border-radius: 18rpx; background: var(--soft); color: var(--ink); font-size: 24rpx; white-space: nowrap; }
+.schedule-dock .dock-primary { background: var(--accent); color: #fff; }
+.font-large .schedule-header .title { font-size: 42rpx; }.font-large .schedule-dock .dock-action { font-size: 26rpx; }.font-large .week-title { font-size: 34rpx; }.font-large .week-status, .font-large .swipe-hint, .font-large .week-range { font-size: 24rpx; }
+.board-scroll { width: 100%; border-radius: 24rpx; background: #fff; overflow: hidden; }
+.timetable { width: 100%; }
+.board-head { display: flex; background: #eef4ef; height: 100rpx; align-items: stretch; }
+.section-head { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 64rpx; flex-shrink: 0; text-align: center; }
+.section-month { font-size: 28rpx; font-weight: 600; line-height: 1.3; }
+.month-unit { font-size: 20rpx; line-height: 1.4; }
+.day-head { display: flex; flex-direction: column; justify-content: center; align-items: center; flex: 1; width: 0; min-width: 0; text-align: center; }
+.day-name { font-size: 24rpx; font-weight: 600; line-height: 1.5; }
+.day-date { font-size: 20rpx; line-height: 1.5; margin-top: 4rpx; color: #5e7667; }
+.day-today { background: #d9ebe0; border-radius: 16rpx 16rpx 0 0; }
+.day-today .day-name, .day-today .day-date { color: #275c43; font-weight: 600; }
+.column-today { background: #f4f9f5; }
+.board-body { display: flex; height: 1344rpx; }
+.period-column { width: 64rpx; flex-shrink: 0; background: #f7f9f7; }
+.period-label { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 96rpx; line-height: 1.4; text-align: center; font-size: 23rpx; color: #6c8075; }
+.period-time { font-size: 17rpx; color: #667a6e; line-height: 1.4; }
+.day-column { position: relative; flex: 1; width: 0; min-width: 0; height: 1344rpx; border-left: 1rpx solid #eef3ef; }
+.period-line { position: absolute; left: 0; right: 0; height: 96rpx; border-top: 1rpx solid #eef3ef; }
+.course-block { position: absolute; left: 3rpx; right: 3rpx; padding: 10rpx 5rpx; border-radius: 12rpx; overflow: hidden; }
+.course-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 22rpx; font-weight: 600; line-height: 1.4; word-break: break-all; }
+.course-subtitle { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 18rpx; color: #536a5b; line-height: 1.4; margin-top: 8rpx; word-break: break-all; }
+.single-period .course-title { -webkit-line-clamp: 2; font-size: 21rpx; }
+.single-period .course-subtitle { display: none; }
+.list-title { margin: 30rpx 0 24rpx; }
+.course-list-item .muted { margin-top: 14rpx; }
+.import-text { height: 280rpx; padding: 24rpx; line-height: 1.6; font-size: 24rpx; }
+.preview-list { height: 420rpx; background: #f3f6f3; border-radius: 18rpx; }
+.preview-item { padding: 20rpx; border-bottom: 1rpx solid #e3ebe4; font-size: 26rpx; word-break: break-all; }
+.section-tabs { display: flex; flex-shrink: 0; margin: 0 24rpx 12rpx; padding: 8rpx; background: var(--soft); border-radius: 24rpx; }
+.section-tab { flex: 1; min-width: 0; min-height: 76rpx; display: flex; align-items: center; justify-content: center; border-radius: 18rpx; font-size: 26rpx; color: var(--muted); transition: background-color .18s ease, transform .15s ease; }
+.section-tab-active { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 4rpx 12rpx rgba(39,61,55,.04); }
+.exam-notice { padding: 22rpx 24rpx; background: #f5ede1; color: #896a38; border-radius: 20rpx; font-size: 23rpx; line-height: 1.6; margin-bottom: 24rpx; }
+.exam-summary { display: flex; gap: 12rpx; margin-bottom: 28rpx; }
+.exam-summary-item { flex: 1; min-width: 0; padding: 22rpx 16rpx; border-radius: 22rpx; background: #fff; display: flex; flex-direction: column; }
+.exam-summary-value { margin-top: 12rpx; font-size: 30rpx; font-weight: 600; word-break: break-all; }
+.exam-heading { margin-bottom: 24rpx; }
+.exam-heading .add-exam { width: auto; min-height: 88rpx; line-height: 88rpx; margin: 0; padding: 0 22rpx; font-size: 25rpx; }
+.next-exam { padding-top: 24rpx; }
+.exam-countdown { color: #426e58; font-size: 44rpx; font-weight: 600; line-height: 1.5; margin-bottom: 14rpx; }
+.next-exam-name { font-size: 32rpx; font-weight: 600; line-height: 1.6; margin-bottom: 16rpx; word-break: break-all; }
+.next-exam .muted { margin: 10rpx 0; }
+.next-exam .chip { display: inline-block; margin-top: 14rpx; }
+.exam-empty { min-height: 180rpx; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18rpx; padding: 30rpx 0; }
+.exam-empty-icon { width: 64rpx; height: 64rpx; line-height: 64rpx; text-align: center; font-size: 28rpx; border-radius: 20rpx; background: #edf4ef; color: #73917e; }
+.exam-filter { min-height: 88rpx; line-height: 88rpx; font-size: 24rpx; color: #5b7466; }
+.exam-list-item { padding: 28rpx 0; border-bottom: 1rpx solid #edf2ee; }
+.exam-list-item:last-child { border-bottom: 0; }
+.exam-name { flex: 1; min-width: 0; font-size: 29rpx; line-height: 1.6; font-weight: 600; word-break: break-all; }
+.exam-list-item .muted { margin-top: 12rpx; }
+.exam-status { flex-shrink: 0; font-size: 22rpx; padding: 8rpx 12rpx; border-radius: 12rpx; }
+.status-upcoming { background: #e9f0eb; color: #426b55; }
+.status-ongoing { background: #f5e8cf; color: #87612b; }
+.status-finished { background: #eff1f0; color: #6c7971; }
+.exam-note { margin-top: 16rpx; font-size: 24rpx; line-height: 1.6; color: #63736a; word-break: break-all; }
+.exam-item-footer { display: flex; justify-content: space-between; gap: 12rpx; margin-top: 18rpx; font-size: 22rpx; color: #607a6a; }
+.setup-explanation { font-size: 25rpx; line-height: 1.7; color: #5c7766; margin-top: 18rpx; }
+.setup-modes { display: flex; gap: 12rpx; margin-top: 26rpx; padding: 6rpx; border-radius: 20rpx; background: #edf3ef; }
+.setup-mode { flex: 1; min-width: 0; min-height: 88rpx; display: flex; align-items: center; justify-content: center; border-radius: 16rpx; color: #637b6c; font-size: 25rpx; }
+.setup-mode-selected { background: #fff; color: #315f4c; font-weight: 600; }
+.calibration-preview { margin-top: 16rpx; padding: 20rpx; background: #e7f1e9; border-radius: 18rpx; font-size: 24rpx; line-height: 1.6; color: #426c53; }
+.setup-locate { margin-top: 26rpx; }
+/* 课表色块沿用浅色区分课程，深色模式下仍保持文字对比。 */
+.course-block { color: #273d37; }
+.theme-dark .day-date, .theme-dark .period-label, .theme-dark .period-time { color: var(--muted); }
+.theme-dark .day-today, .theme-dark .column-today { background: var(--soft); }
+.theme-dark .day-today .day-name, .theme-dark .day-today .day-date { color: var(--ink); }
+.theme-dark .day-column, .theme-dark .period-line { border-color: var(--border); }
+/* 空白节次与课程详情都在弹窗中处理，保持课表原来的滚动位置。 */
+.slot-pressed { background: var(--soft); }
+.course-block { z-index: 1; }
+.course-dialog-mask { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24rpx 28rpx; padding-bottom: calc(24rpx + env(safe-area-inset-bottom)); background: rgba(0,0,0,.4); }
+.course-dialog { width: 100%; max-width: 680rpx; max-height: calc(100vh - 48rpx - env(safe-area-inset-bottom)); display: flex; flex-direction: column; background: var(--surface); color: var(--ink); border-radius: 28rpx; overflow: hidden; box-shadow: 0 20rpx 64rpx rgba(0,0,0,.16); }
+.course-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; flex-shrink: 0; padding: 12rpx 16rpx 8rpx 28rpx; }
+.course-dialog-header .section-title { font-size: 32rpx; }
+.course-dialog-close { flex-shrink: 0; width: 88rpx; height: 88rpx; min-height: 88rpx; padding: 0; line-height: 88rpx; background: transparent; color: var(--muted); font-size: 44rpx; }
+.course-dialog-scroll { height: 48vh; flex: 0 1 auto; min-height: 0; }
+.course-editor-scroll { height: 56vh; }
+.course-dialog-body { padding: 0 28rpx 24rpx; }
+.course-dialog-body .label { margin-top: 20rpx; }
+.course-dialog-note { padding: 20rpx; border-radius: 16rpx; background: var(--soft); color: var(--muted); font-size: 25rpx; line-height: 1.6; }
+.course-detail + .course-detail { margin-top: 28rpx; padding-top: 28rpx; border-top: 1rpx solid var(--border); }
+.course-detail-title { font-size: 34rpx; font-weight: 600; line-height: 1.5; word-break: break-all; margin: 12rpx 0 24rpx; }
+.course-detail-row { display: flex; align-items: flex-start; gap: 16rpx; margin-top: 20rpx; line-height: 1.6; font-size: 27rpx; }
+.course-detail-label { flex-shrink: 0; width: 120rpx; color: var(--muted); }
+.course-detail-value { flex: 1; min-width: 0; word-break: break-all; }
+.course-detail-actions button { min-width: 0; padding: 0 12rpx; }
+.course-dialog-footer { flex-shrink: 0; padding: 20rpx 28rpx 28rpx; border-top: 1rpx solid var(--border); }
+.course-dialog-footer .actions { margin-top: 0; }
+.course-dialog-done, .course-delete { width: 100%; }
+.course-error { flex-shrink: 0; padding: 16rpx 28rpx; color: #a34036; background: #fbefec; line-height: 1.6; font-size: 25rpx; word-break: break-all; }
+.theme-dark .course-error { color: #ffbdb0; background: #49312e; }
+.font-large .course-detail-row, .font-large .course-dialog-note { font-size: 30rpx; }
+.term-dialog-scroll { height: 52vh; }
+.term-dialog .setup-modes { margin-top: 24rpx; background: var(--soft); }
+.term-dialog .setup-mode { width: auto; margin: 0; padding: 0 8rpx; background: transparent; color: var(--muted); font-size: 25rpx; }
+.term-dialog .setup-mode-selected { background: var(--surface); color: var(--ink); }
+.term-dialog .setup-explanation, .term-dialog .calibration-preview { background: var(--soft); color: var(--muted); }
+.font-large .term-dialog .setup-mode { font-size: 28rpx; }
+
+.exam-note-preview, .exam-name, .next-exam-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.exam-detail-title { font-size: 34rpx; font-weight: 600; line-height: 1.5; white-space: pre-wrap; word-break: break-all; margin-bottom: 16rpx; }
+.exam-detail-note { display: block; line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
+.import-preview-list { margin-top: 20rpx; }
+.import-dialog .import-text { height: 280rpx; }

@@ -1,0 +1,18 @@
+.welcome-mask { --welcome-bg: #edf5ef; --welcome-surface: #ffffff; --welcome-ink: #273d37; --welcome-muted: #61776d; --welcome-accent: #4c7c6d; --welcome-soft: #dcece2; position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(16, 31, 24, .46); box-sizing: border-box; }
+.theme-blue { --welcome-bg: #eaf2f7; --welcome-accent: #4d7696; --welcome-soft: #dce8f1; }
+.theme-rose { --welcome-bg: #f8eef2; --welcome-accent: #946176; --welcome-soft: #f0dfe7; }
+.theme-dark { --welcome-bg: #24312a; --welcome-surface: #304338; --welcome-ink: #e3eee7; --welcome-muted: #b2c5b8; --welcome-soft: #344d3e; }
+.welcome-card { box-sizing: border-box; width: 100%; max-width: 340px; max-height: 88vh; overflow-y: auto; padding: 28px 24px 24px; border-radius: 24px; background: var(--welcome-bg); color: var(--welcome-ink); text-align: center; }
+.welcome-check { width: 44px; height: 44px; margin: 0 auto 16px; border-radius: 50%; background: var(--welcome-soft); color: var(--welcome-accent); font-size: 25px; line-height: 44px; }
+.welcome-title { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.welcome-caption { margin-top: 20px; color: var(--welcome-muted); font-size: 14px; line-height: 1.6; }
+.welcome-streak { margin: 4px 0 24px; font-size: 56px; font-weight: 600; line-height: 1.2; color: var(--welcome-accent); }
+.welcome-unit { margin-left: 8px; color: var(--welcome-muted); font-size: 16px; font-weight: 400; }
+.welcome-quote { padding: 18px 12px; border-radius: 14px; background: var(--welcome-surface); }
+.welcome-quote-text { display: block; font-size: 16px; line-height: 1.8; }
+.welcome-quote-source { display: block; margin-top: 8px; color: var(--welcome-muted); font-size: 12px; line-height: 1.6; }
+.welcome-card .welcome-confirm { display: block; box-sizing: border-box; width: 100%; min-height: 46px; margin: 24px 0 0; padding: 0 16px; border-radius: 12px; background: var(--welcome-accent); color: #fff; font-size: 16px; font-weight: 500; line-height: 46px; }
+.welcome-confirm::after { border: none; }
+.font-large .welcome-caption, .font-large .welcome-confirm { font-size: 18px; }
+.font-large .welcome-quote-text { font-size: 18px; }
+.font-large .welcome-quote-source { font-size: 14px; }

@@ -1,0 +1,20 @@
+.review-body{padding-bottom:calc(48rpx + env(safe-area-inset-bottom))}.tabs{display:flex;gap:12rpx;margin-bottom:24rpx}.tabs button{flex:1;line-height:88rpx;background:var(--soft,#edf3f0);color:var(--muted,#61776d)}.tabs .active{background:var(--accent,#4c7c6d);color:#fff}.day-row{display:flex;align-items:center;gap:14rpx;padding:14rpx 0;font-size:23rpx}.day-label{width:70rpx;flex-shrink:0}.day-amount{width:110rpx;text-align:right;flex-shrink:0}.bar-track{flex:1;height:14rpx;background:var(--soft,#edf3f0);border-radius:8rpx;overflow:hidden}.bar{height:100%;background:var(--accent,#4c7c6d);border-radius:8rpx}.category-row{display:flex;justify-content:space-between;padding:22rpx 0;border-bottom:1rpx solid var(--border,#edf2ef)}.photo-grid{display:flex;flex-wrap:wrap;gap:12rpx;margin-top:22rpx}.photo-grid image{width:calc((100% - 24rpx)/3);height:160rpx;border-radius:14rpx}
+
+.review-tabs button { width: auto; min-width: 0; min-height: 44px; margin: 0; padding: 8px 4px; font-size: 14px; line-height: 28px; }
+.summary-period { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.summary-period-options { display: flex; gap: 8px; }
+.summary-period-options button { width: auto; min-height: 44px; margin: 0; padding: 8px 16px; background: var(--soft); color: var(--muted); font-size: 14px; line-height: 28px; }
+.summary-period-options .selected { background: var(--accent); color: #fff; }
+.summary-prose { margin-top: 16px; font-size: 15px; line-height: 1.9; color: var(--ink); }
+.summary-facts { margin-top: 20px; }
+.summary-fact { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); font-size: 14px; }
+.completion-breakdown { display: flex; gap: 24px; margin: 20px 0; }
+.completion-breakdown > view { flex: 1; min-width: 0; }
+.completion-number { margin-top: 8px; color: var(--accent); font-size: 32px; font-weight: 600; }
+.completion-number text { font-size: 14px; font-weight: 400; }
+.completion-late { color: #975c3c; }
+.theme-dark .completion-late { color: #efb98e; }
+.font-large .review-tabs button, .font-large .summary-period-options button, .font-large .summary-fact { font-size: 16px; }
+.font-large .summary-prose { font-size: 17px; }
+.review-body .stat-grid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: stretch; width: 100%; gap: 0; margin: 24rpx 0 6rpx; }
+.review-body .stat-grid .stat { flex: 0 0 calc(50% - 9rpx); width: calc(50% - 9rpx); min-width: 0; margin: 0 0 18rpx; box-sizing: border-box; }

@@ -1,0 +1,35 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header"><view class="title">生活回顾</view><view class="subtitle">看看每一笔开销，也看看每一步进展。</view></view>
+  <scroll-view class="content" scroll-y><view class="body review-body">
+    <view class="tabs review-tabs">
+      <button class="{{view==='month'?'active':''}}" data-mode="month" bindtap="onMode">月度回顾</button>
+      <button class="{{view==='week'?'active':''}}" data-mode="week" bindtap="onMode">周回顾</button>
+      <button class="{{view==='summary'?'active':''}}" data-mode="summary" bindtap="onMode">总结</button>
+    </view>
+    <view wx:if="{{view==='summary'}}" class="summary-period"><text class="muted">总结周期</text><view class="summary-period-options"><button class="{{mode==='month'?'selected':''}}" data-mode="month" bindtap="onSummaryMode">月度</button><button class="{{mode==='week'?'selected':''}}" data-mode="week" bindtap="onSummaryMode">每周</button></view></view>
+    <picker mode="date" fields="{{mode==='month'?'month':'day'}}" value="{{anchor}}" bindchange="onDate"><view class="field picker-field">{{mode==='month'?'选择月份':'选择日期'}} · {{anchorLabel}} ▾</view></picker>
+    <block wx:if="{{result}}">
+      <view class="hint">{{result.range.start}} ～ {{result.range.end}}</view>
+      <block wx:if="{{view==='summary'}}">
+        <view class="card summary-report">
+          <view class="section-title">{{mode==='month'?'月度总结':'每周总结'}}</view>
+          <view class="summary-prose">本期记录 {{result.expenseCount}} 笔支出，共 ¥{{result.expenseText}}。完成 {{result.completedTodos}} 件待办，其中按时完成 {{result.onTimeCompletedTodos}} 件，逾期完成 {{result.lateCompletedTodos}} 件。</view>
+          <view class="summary-facts"><view class="summary-fact"><text class="muted">专注时长</text><text>{{result.focusMinutes}} 分钟</text></view><view class="summary-fact"><text class="muted">习惯打卡</text><text>{{result.checkins}} 次</text></view><view class="summary-fact"><text class="muted">新增待办</text><text>{{result.createdTodos}} 件</text></view><view class="summary-fact"><text class="muted">新增随记</text><text>{{result.notes}} 条</text></view><view class="summary-fact"><text class="muted">收藏菜谱</text><text>{{result.recipes}} 份</text></view></view>
+        </view>
+        <view class="card"><view class="section-title">待办完成情况</view><view class="completion-breakdown"><view><text class="muted">按时完成</text><view class="completion-number">{{result.onTimeCompletedTodos}}<text> 件</text></view></view><view><text class="muted">逾期完成</text><view class="completion-number completion-late">{{result.lateCompletedTodos}}<text> 件</text></view></view></view><view class="muted">按实际完成时间计入本期，逾期完成的事项也计入完成总数。</view></view>
+      </block>
+      <block wx:else>
+        <view class="card tinted"><view class="muted">本期支出 · {{result.expenseCount}} 笔</view><view class="big-number">¥ {{result.expenseText}}</view><view class="row"><text>专注 {{result.focusMinutes}} 分钟</text><text>打卡 {{result.checkins}} 次</text></view></view>
+        <view class="stat-grid"><view class="stat"><view class="muted">新增待办</view><view class="stat-number">{{result.createdTodos}} 件</view></view><view class="stat"><view class="muted">完成待办</view><view class="stat-number">{{result.completedTodos}} 件</view><view class="muted">其中逾期完成 {{result.lateCompletedTodos}} 件</view></view><view class="stat"><view class="muted">新增随记</view><view class="stat-number">{{result.notes}} 条</view></view><view class="stat"><view class="muted">收藏菜谱</view><view class="stat-number">{{result.recipes}} 份</view></view></view>
+        <view class="card"><view class="section-title">每天的支出</view><view wx:for="{{result.days}}" wx:key="date" class="day-row"><text class="day-label">{{item.label}}</text><view class="bar-track"><view class="bar" style="width:{{item.percent}}%;"></view></view><text class="day-amount">{{item.amount}}</text></view></view>
+        <view class="card"><view class="section-title">分类支出</view><view wx:for="{{result.categories}}" wx:key="name" class="category-row"><text>{{item.name}}</text><text>¥ {{item.amount}}</text></view><view wx:if="{{!result.categories.length}}" class="hint">本期没有支出记录。</view></view>
+        <view wx:if="{{result.photos.length}}" class="card"><view class="section-title">留下的画面</view><view class="photo-grid"><image wx:for="{{result.photos}}" wx:key="*this" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="preview" /></view></view>
+      </block>
+      <view wx:if="{{result.unknownCompleted}}" class="hint">另有 {{result.unknownCompleted}} 件历史待办没有完成时间，未计入本期完成数。</view>
+      <view class="actions"><button class="secondary" bindtap="openTimeline">查看时间轴</button><button class="primary" bindtap="copy">{{view==='summary'?'复制本期总结':'复制本期回顾'}}</button></view>
+      <view class="hint">根据已同步到本机的记录统计；日期范围内没有记录的项目显示为 0。</view>
+    </block>
+  </view></scroll-view>
+</view>
+<daily-checkin-dialog />

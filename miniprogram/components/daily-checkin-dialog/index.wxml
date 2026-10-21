@@ -1,0 +1,10 @@
+<view wx:if="{{visible}}" class="welcome-mask {{appearance}}" catchtouchmove="stopTap">
+  <view class="welcome-card" catchtap="stopTap" aria-role="dialog" aria-label="今日签到成功">
+    <view class="welcome-check">✓</view>
+    <view class="welcome-title">今日签到成功</view>
+    <view class="welcome-caption">已连续签到</view>
+    <view class="welcome-streak">{{streak}}<text class="welcome-unit">天</text></view>
+    <view class="welcome-quote"><text class="welcome-quote-text">{{quote.text}}</text><text class="welcome-quote-source">—— {{quote.source}}</text></view>
+    <button class="welcome-confirm" bindtap="dismiss">开启今天</button>
+  </view>
+</view>

@@ -1,0 +1,186 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header schedule-header"><view class="title">{{activeSection === 'exams' ? '考试信息' : '我的课表'}}</view><view class="subtitle">长春理工大学{{term.termName ? ' · ' + term.termName : ''}}</view></view>
+  <view class="section-tabs"><view class="section-tab {{activeSection === 'courses' ? 'section-tab-active' : ''}}" data-section="courses" bindtap="switchSection" hover-class="pressed" aria-role="button">课程信息</view><view class="section-tab {{activeSection === 'exams' ? 'section-tab-active' : ''}}" data-section="exams" bindtap="switchSection" hover-class="pressed" aria-role="button">考试信息</view></view>
+  <view wx:if="{{activeSection === 'courses' && term.termStart}}" class="schedule-weekbar">
+    <view class="week-toolbar">
+      <button class="week-step" disabled="{{week <= 1}}" hover-class="pressed" bindtap="previousWeek" aria-label="上一周">‹ 上周</button>
+      <picker class="week-picker" range="{{weekOptions}}" value="{{weekIndex}}" bindchange="changeWeek" aria-label="选择教学周，当前第{{week}}周">
+        <view class="week-title">第 {{week}} 周 ▾</view><view class="week-range">{{weekRange}}</view>
+      </picker>
+      <button class="week-step" disabled="{{week >= term.totalWeeks}}" hover-class="pressed" bindtap="nextWeek" aria-label="下一周">下周 ›</button>
+      <button class="current-week {{isCurrentWeek ? 'at-current-week' : ''}}" hover-class="pressed" bindtap="currentWeek" aria-label="回到本周">本周</button>
+    </view>
+    <view class="week-context"><text class="week-status">{{weekStatus}}</text><text class="swipe-hint">左右滑动切周</text></view>
+  </view>
+  <scroll-view class="content" scroll-y="{{!courseDialog && !panel && !examFormVisible && !examDetail}}" scroll-into-view="{{scrollTarget}}" scroll-with-animation>
+    <view class="body schedule-body">
+      <view id="section-top-a"></view><view id="section-top-b"></view>
+      <block wx:if="{{activeSection === 'exams'}}">
+        <view class="exam-notice">本地记录，请以教务系统最新安排为准。</view>
+        <view class="exam-summary">
+          <view class="exam-summary-item"><text class="muted">今日课程</text><text class="exam-summary-value">{{todayCourseCount}}</text></view>
+          <view class="exam-summary-item"><text class="muted">当前周</text><text class="exam-summary-value">{{currentWeekText}}</text></view>
+          <view class="exam-summary-item"><text class="muted">下一场考试</text><text class="exam-summary-value">{{nextExam ? nextExam.shortDate : '暂无'}}</text></view>
+        </view>
+        <view class="row exam-heading"><view class="section-title">考试安排</view><button size="mini" class="primary add-exam" hover-class="pressed" bindtap="addExam">＋ 添加考试</button></view>
+        <view class="card">
+          <view class="section-title">下一场考试</view>
+          <view wx:if="{{nextExam}}" class="next-exam" data-id="{{nextExam.id}}" bindtap="openExamDetail" hover-class="pressed">
+            <view class="exam-countdown">{{nextExam.countdown}}</view><view class="next-exam-name">{{nextExam.title}}</view>
+            <view class="muted">{{nextExam.dateText}} · {{nextExam.timeText}}</view><view class="muted">{{nextExam.location || '地点待补充'}}{{nextExam.seat ? ' · 座位 ' + nextExam.seat : ''}}</view><text class="chip">{{nextExam.method}} · {{nextExam.statusText}}</text>
+          </view>
+          <view wx:else class="exam-empty"><view class="exam-empty-icon">考</view><view class="muted">暂无待考安排</view></view>
+        </view>
+        <view class="card">
+          <view class="row"><view class="section-title">所有考试</view><picker range="{{examFilters}}" value="{{examFilter}}" bindchange="onExamFilter"><view class="exam-filter">{{examFilters[examFilter]}} ▾</view></picker></view>
+          <view wx:for="{{examList}}" wx:key="id" class="exam-list-item" data-id="{{item.id}}" bindtap="openExamDetail" hover-class="pressed">
+            <view class="row"><view class="exam-name">{{item.title}}</view><text class="exam-status status-{{item.status}}">{{item.statusText}}</text></view>
+            <view class="muted">{{item.dateText}} · {{item.timeText}}</view><view class="muted">{{item.location || '地点待补充'}}{{item.seat ? ' · 座位 ' + item.seat : ''}}</view>
+            <view wx:if="{{item.note}}" class="exam-note exam-note-preview">{{item.note}}</view><view class="exam-item-footer"><text>{{item.method}}</text><text>{{item.countdown}} · 详情 ›</text></view>
+          </view>
+          <view wx:if="{{!examList.length}}" class="exam-empty"><view class="exam-empty-icon">历</view><view class="muted">{{examFilter === 2 ? '暂无已结束的考试' : '暂无考试安排'}}</view></view>
+        </view>
+        <view class="card"><view class="section-title">今日课程</view>
+          <view wx:for="{{todayCourses}}" wx:key="id" class="exam-list-item" data-id="{{item.id}}" bindtap="viewTodayCourse"><view class="exam-name">{{item.title}}</view><view class="muted">第 {{item.start}}～{{item.end}} 节 · {{item.location || '未填教室'}}</view></view>
+          <view wx:if="{{!todayCourses.length}}" class="exam-empty"><view class="muted">{{term.termStart ? '今天没有课程' : '设置学期起始日后显示今日课程'}}</view></view>
+        </view>
+      </block>
+      <block wx:else>
+      <view id="settings-top-a"></view><view id="settings-top-b"></view>
+      <view id="week-top-a"></view><view id="week-top-b"></view>
+      <view wx:if="{{!term.courses.length && !term.termStart}}" class="card empty"><view class="empty-title">把这学期装进课表</view><view class="muted">先设置学期，再导入或手动添加课程。</view></view>
+      <block wx:elif="{{term.termStart}}">
+        <view class="board-scroll" bindtouchstart="onWeekTouchStart" bindtouchmove="onWeekTouchMove" bindtouchend="onWeekTouchEnd" bindtouchcancel="onWeekTouchCancel">
+          <view class="timetable"><view class="board-head"><view class="section-head"><text class="section-month">{{headerMonth || '节'}}</text><text class="month-unit">{{headerMonth ? '月' : '次'}}</text></view><view wx:for="{{days}}" wx:key="day" class="day-head {{item.isToday ? 'day-today' : ''}}"><text class="day-name">周{{item.name}}</text><text class="day-date">{{item.dateText}}</text></view></view>
+            <view class="board-body" style="height: {{boardHeight}}rpx;"><view class="period-column"><view wx:for="{{periods}}" wx:key="number" class="period-label"><text>{{item.number}}</text><text wx:if="{{item.start}}" class="period-time">{{item.start}}</text><text wx:if="{{item.end}}" class="period-time">{{item.end}}</text></view></view>
+              <view wx:for="{{days}}" wx:key="day" wx:for-item="day" class="day-column {{day.isToday ? 'column-today' : ''}}" style="height: {{boardHeight}}rpx;">
+                <view wx:for="{{day.slots}}" wx:key="number" class="period-line" style="top: {{item.top}}rpx;" data-day="{{day.day}}" data-period="{{item.number}}" bindtap="openEmptySlot" hover-class="slot-pressed" aria-role="button" aria-hidden="{{item.occupied}}" aria-label="{{weekdays[day.day - 1]}}第{{item.number}}节，添加临时课程"></view>
+                <view wx:for="{{day.blocks}}" wx:key="key" class="course-block {{item.start === item.end ? 'single-period' : ''}}" style="top: {{item.top}}rpx; height: {{item.height}}rpx; background: {{item.color}};" data-day="{{day.day}}" data-key="{{item.key}}" catchtap="openBlock" aria-role="button" aria-label="查看{{item.title}}课程详情" hover-class="pressed"><view class="course-title">{{item.title}}</view><view class="course-subtitle">{{item.subtitle}}</view></view>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="hint">左滑下一周，右滑上一周；上下滚动查看课表，点击空白节次加课，点击课程查看详情。</view>
+        <view class="section-title list-title">{{isCurrentWeek ? '本周课程' : '第 ' + week + ' 周课程'}} · {{thisWeek.length}} 条</view>
+        <view wx:for="{{thisWeek}}" wx:key="id" class="card course-list-item" data-id="{{item.id}}" bindtap="viewCourse"><view class="row"><view class="section-title">{{item.title}}</view><text class="chip">{{item.weekdayText}}</text></view><view class="muted">第 {{item.start}}～{{item.end}} 节 · {{item.location || '未填教室'}}</view><view wx:if="{{item.teacher}}" class="muted">{{item.teacher}}</view></view>
+        <view wx:if="{{!thisWeek.length}}" class="card empty"><view class="muted">这一周没有课程，换一周看看。</view></view>
+      </block>
+      <view wx:else class="card empty"><view class="empty-title">课程已导入，还需校准当前周</view><view class="muted">无需重新导入，填写今天是第几教学周即可。</view><button class="primary setup-locate" bindtap="openSettings">定位本周</button></view>
+      </block>
+    </view>
+  </scroll-view>
+  <view wx:if="{{activeSection === 'courses'}}" class="schedule-dock">
+    <button class="dock-action" bindtap="openHomework" hover-class="pressed">课程作业</button>
+    <button class="dock-action" bindtap="openSettings" hover-class="pressed">学期设置</button>
+    <button class="dock-action" bindtap="openImport" hover-class="pressed">导入课表</button>
+    <button class="dock-action dock-primary" bindtap="addCourse" hover-class="pressed">＋ 添加课程</button>
+  </view>
+  <view wx:if="{{examFormVisible}}" class="info-dialog-mask" catchtouchmove="preventCourseTouch" bindtap="closeExamForm">
+    <view id="exam-editor" class="info-dialog exam-dialog" catchtap="preventCourseTouch" aria-role="dialog" aria-modal="true" aria-label="{{examDraft.id ? '编辑考试' : '添加考试'}}">
+      <view class="info-dialog-header"><view class="info-dialog-title">{{examDraft.id ? '编辑考试' : '添加考试'}}</view><button class="info-dialog-close" disabled="{{examBusy}}" bindtap="closeExamForm" aria-label="关闭考试编辑">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body">
+          <text class="label">考试名称</text><input cursor-spacing="120" disabled="{{examBusy}}" class="field" maxlength="80" value="{{examDraft.title}}" placeholder="例如：矩阵论期末考试" data-key="title" bindinput="onExamField" />
+          <text class="label">考试日期</text><picker disabled="{{examBusy}}" mode="date" start="1000-01-01" end="9999-12-31" value="{{examDraft.date}}" data-key="date" bindchange="onExamField"><view class="field picker-field">{{examDraft.date}} ▾</view></picker>
+          <text class="label">开始时间 / 结束时间（同一天）</text><view class="inline-pickers"><picker disabled="{{examBusy}}" mode="time" value="{{examDraft.start}}" data-key="start" bindchange="onExamField"><view class="field picker-field">{{examDraft.start}} ▾</view></picker><picker disabled="{{examBusy}}" mode="time" value="{{examDraft.end}}" data-key="end" bindchange="onExamField"><view class="field picker-field">{{examDraft.end}} ▾</view></picker></view>
+          <text class="label">考试地点（选填）</text><input cursor-spacing="120" disabled="{{examBusy}}" class="field" maxlength="100" value="{{examDraft.location}}" placeholder="教学楼与教室" data-key="location" bindinput="onExamField" />
+          <text class="label">座位号（选填）</text><input cursor-spacing="120" disabled="{{examBusy}}" class="field" maxlength="20" value="{{examDraft.seat}}" data-key="seat" bindinput="onExamField" />
+          <text class="label">考试方式</text><picker disabled="{{examBusy}}" range="{{examMethods}}" value="{{examDraft.methodIndex}}" data-key="methodIndex" bindchange="onExamField"><view class="field picker-field">{{examDraft.method}} ▾</view></picker>
+          <text class="label">备注（选填）</text><textarea cursor-spacing="120" disabled="{{examBusy}}" class="field textarea" maxlength="200" value="{{examDraft.note}}" placeholder="例如：携带学生证和计算器" data-key="note" bindinput="onExamField" />
+        <button wx:if="{{examDraft.id}}" class="danger delete-course" disabled="{{examBusy}}" bindtap="deleteExam">删除考试</button>
+      </view></scroll-view>
+      <view class="info-dialog-footer"><view wx:if="{{examError}}" class="info-dialog-error" role="alert">{{examError}}</view><view class="actions"><button class="secondary" disabled="{{examBusy}}" bindtap="closeExamForm">取消</button><button class="primary" disabled="{{examBusy}}" loading="{{examBusy}}" bindtap="saveExam">保存考试</button></view></view>
+    </view>
+  </view>
+  <view wx:if="{{examDetail}}" class="info-dialog-mask" catchtouchmove="preventCourseTouch" bindtap="closeExamDetail">
+    <view id="exam-detail" class="info-dialog exam-dialog" catchtap="preventCourseTouch" aria-role="dialog" aria-modal="true" aria-label="考试详情">
+      <view class="info-dialog-header"><view class="info-dialog-title">考试详情</view><button class="info-dialog-close" disabled="{{examBusy}}" bindtap="closeExamDetail" aria-label="关闭考试详情">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body">
+        <view class="exam-detail-title">{{examDetail.title}}</view><view class="exam-countdown">{{examDetail.countdown}}</view>
+        <view class="course-detail-row"><text class="course-detail-label">考试日期</text><text class="course-detail-value">{{examDetail.dateText}}</text></view>
+        <view class="course-detail-row"><text class="course-detail-label">考试时间</text><text class="course-detail-value">{{examDetail.timeText}}</text></view>
+        <view class="course-detail-row"><text class="course-detail-label">考试地点</text><text class="course-detail-value">{{examDetail.location || '待补充'}}</text></view>
+        <view class="course-detail-row"><text class="course-detail-label">座位号</text><text class="course-detail-value">{{examDetail.seat || '待补充'}}</text></view>
+        <view class="course-detail-row"><text class="course-detail-label">考试方式</text><text class="course-detail-value">{{examDetail.method}}</text></view>
+        <view class="course-detail-row"><text class="course-detail-label">状态</text><text class="course-detail-value">{{examDetail.statusText}}</text></view>
+        <view class="label">备注</view><text class="exam-detail-note" selectable>{{examDetail.note || '暂无备注'}}</text>
+      </view></scroll-view>
+      <view class="info-dialog-footer"><view class="actions"><button class="secondary" bindtap="closeExamDetail">关闭</button><button class="primary" disabled="{{examBusy}}" data-id="{{examDetail.id}}" bindtap="editExam">编辑考试</button></view></view>
+    </view>
+  </view>
+  <view wx:if="{{panel === 'import'}}" class="info-dialog-mask" catchtouchmove="preventCourseTouch" bindtap="closePanel">
+    <view id="schedule-import" class="info-dialog import-dialog" catchtap="preventCourseTouch" aria-role="dialog" aria-modal="true" aria-label="导入课表">
+      <view class="info-dialog-header"><view class="info-dialog-title">导入课表</view><button class="info-dialog-close" disabled="{{importBusy}}" bindtap="closePanel" aria-label="关闭课表导入">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body">
+        <view class="hint">支持长春理工大学导出的网页型 DOC 课表，也支持 CSV/JSON。先将文件发送到微信聊天，再点击选择文件。</view>
+        <view class="actions"><button disabled="{{importBusy}}" class="secondary" bindtap="chooseFile">选择文件</button><button disabled="{{importBusy}}" class="secondary" bindtap="copyTemplate">复制模板</button></view>
+        <text class="label">或粘贴课表文本</text><textarea cursor-spacing="120" disabled="{{importBusy}}" class="field import-text" value="{{importText}}" maxlength="200000" placeholder="课程名称、星期、开始节次、结束节次、周次、教师、教室" bindinput="onImportText" />
+        <text class="label">导入方式</text><picker disabled="{{importBusy}}" range="{{modes}}" value="{{importMode}}" bindchange="onImportMode"><view class="field picker-field">{{modes[importMode]}} ▾</view></picker>
+
+        <view wx:if="{{previewCount}}"><view class="label">识别到 {{previewCount}} 条上课安排，请核对</view><view class="muted">{{previewSource}}{{previewTimes ? ' · ' + previewTimes + ' 节作息时间' : ''}}</view><view wx:if="{{previewTerm}}" class="hint">{{previewTerm}} · 确认后同步学期名称及作息时间；开学日期请单独设置。</view><view class="import-preview-list"><view wx:for="{{preview}}" wx:key="key" class="preview-item"><view>{{item.title}}</view><view class="muted">{{item.description}}</view><view class="muted">{{item.location}}</view></view></view></view>
+
+      </view></scroll-view>
+      <view class="info-dialog-footer"><view wx:if="{{importError}}" class="info-dialog-error" role="alert">{{importError}}</view><view class="actions"><button class="secondary" disabled="{{importBusy}}" bindtap="closePanel">取消</button><button wx:if="{{previewCount}}" class="primary" disabled="{{importBusy}}" loading="{{importBusy}}" bindtap="confirmImport">确认导入 {{previewCount}} 条</button><button wx:else class="primary" disabled="{{importBusy}}" loading="{{importBusy}}" bindtap="previewImport">解析预览</button></view></view>
+    </view>
+  </view>
+  <view wx:if="{{courseDialog}}" class="course-dialog-mask" catchtouchmove="preventCourseTouch" bindtap="closeCourseDialog">
+    <view class="course-dialog" catchtap="preventCourseTouch" aria-role="dialog" aria-label="{{courseDialog === 'details' ? '课程详情' : draft.id ? '编辑课程' : courseTemporary ? '临时加课' : '添加课程'}}">
+      <view class="course-dialog-header">
+        <view class="section-title">{{courseDialog === 'details' ? '课程详情' : draft.id ? '编辑课程' : courseTemporary ? '临时加课' : '添加课程'}}</view>
+        <button class="course-dialog-close" disabled="{{courseBusy}}" bindtap="closeCourseDialog" aria-label="关闭课程弹窗">×</button>
+      </view>
+      <scroll-view class="course-dialog-scroll {{courseDialog === 'edit' ? 'course-editor-scroll' : ''}}" scroll-y>
+        <view class="course-dialog-body">
+          <block wx:if="{{courseDialog === 'details'}}">
+            <view wx:if="{{courseDetails.length > 1}}" class="course-dialog-note">此时段有 {{courseDetails.length}} 门重叠课程，可分别查看和编辑。</view>
+            <view wx:for="{{courseDetails}}" wx:key="id" class="course-detail">
+              <view class="course-detail-title">{{item.title}}</view>
+              <view class="course-detail-row"><text class="course-detail-label">上课日期</text><text class="course-detail-value">{{item.weekdayText}} {{item.dateText}}</text></view>
+              <view class="course-detail-row"><text class="course-detail-label">上课节次</text><text class="course-detail-value">第 {{item.start}}～{{item.end}} 节</text></view>
+              <view class="course-detail-row"><text class="course-detail-label">上课时间</text><text class="course-detail-value">{{item.timeText}}</text></view>
+              <view class="course-detail-row"><text class="course-detail-label">教室</text><text class="course-detail-value">{{item.location || '未填写'}}</text></view>
+              <view class="course-detail-row"><text class="course-detail-label">教师</text><text class="course-detail-value">{{item.teacher || '未填写'}}</text></view>
+              <view class="course-detail-row"><text class="course-detail-label">上课周次</text><text class="course-detail-value">第 {{item.weeksText}} 周</text></view>
+              <view class="actions course-detail-actions"><button class="secondary" data-id="{{item.id}}" bindtap="editCourse">编辑课程</button><button class="primary" data-id="{{item.id}}" bindtap="addHomework">添加作业</button></view>
+            </view>
+          </block>
+          <block wx:if="{{courseDialog === 'edit'}}">
+            <view wx:if="{{courseTemporary}}" class="course-dialog-note">已选{{weekdays[draft.day - 1]}}第 {{draft.start}} 节。临时加课默认仅在第 {{week}} 周生效，可修改上课周次。</view>
+            <text class="label">课程名称</text><input class="field" maxlength="80" disabled="{{courseBusy}}" cursor-spacing="120" value="{{draft.title}}" placeholder="填写课程名称" data-key="title" bindinput="onCourseField" />
+            <text class="label">教师（选填）</text><input class="field" maxlength="80" disabled="{{courseBusy}}" cursor-spacing="120" value="{{draft.teacher}}" data-key="teacher" bindinput="onCourseField" />
+            <text class="label">教室（选填）</text><input class="field" maxlength="100" disabled="{{courseBusy}}" cursor-spacing="120" value="{{draft.location}}" data-key="location" bindinput="onCourseField" />
+            <text class="label">星期</text><picker disabled="{{courseBusy}}" range="{{weekdays}}" value="{{draft.day - 1}}" data-key="day" bindchange="onCourseField"><view class="field picker-field">{{weekdays[draft.day - 1]}} ▾</view></picker>
+            <text class="label">开始节次 / 结束节次</text><view class="inline-pickers"><picker disabled="{{courseBusy}}" range="{{sections}}" value="{{draft.start - 1}}" data-key="start" bindchange="onCourseField"><view class="field picker-field">第 {{draft.start}} 节 ▾</view></picker><picker disabled="{{courseBusy}}" range="{{sections}}" value="{{draft.end - 1}}" data-key="end" bindchange="onCourseField"><view class="field picker-field">第 {{draft.end}} 节 ▾</view></picker></view>
+            <text class="label">上课周次</text><input class="field" maxlength="160" disabled="{{courseBusy}}" cursor-spacing="120" value="{{draft.weeks}}" placeholder="例如：9，或 1-16、1-16单,18" data-key="weeks" bindinput="onCourseField" />
+            <view class="hint">一个上课时段对应一条课程安排；取消不会保存。</view>
+            <button wx:if="{{draft.id}}" class="danger course-delete" disabled="{{courseBusy}}" loading="{{courseAction === 'delete'}}" bindtap="deleteCourse">删除这门课程</button>
+          </block>
+        </view>
+      </scroll-view>
+      <view wx:if="{{courseError}}" class="course-error">{{courseError}}</view>
+      <view class="course-dialog-footer">
+        <view wx:if="{{courseDialog === 'edit'}}" class="actions"><button class="secondary" disabled="{{courseBusy}}" bindtap="closeCourseDialog">取消</button><button class="primary" disabled="{{courseBusy}}" loading="{{courseAction === 'save'}}" bindtap="saveCourse">{{courseAction === 'save' ? '保存中…' : '保存课程'}}</button></view>
+        <button wx:else class="secondary course-dialog-done" bindtap="closeCourseDialog">关闭</button>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{panel === 'settings'}}" class="course-dialog-mask term-dialog-mask" catchtouchmove="preventCourseTouch" bindtap="closeSettings">
+    <view class="course-dialog term-dialog" catchtap="preventCourseTouch" aria-role="dialog" aria-label="学期设置">
+      <view class="course-dialog-header"><view class="section-title">{{term.termStart ? '学期设置' : '定位本周 · 还差一步'}}</view><button class="course-dialog-close" disabled="{{termBusy}}" bindtap="closeSettings" aria-label="关闭学期设置">×</button></view>
+      <scroll-view class="course-dialog-scroll term-dialog-scroll" scroll-y><view class="course-dialog-body">
+        <view wx:if="{{!term.termStart}}" class="setup-explanation">课表中没有开学日期，填写当前教学周即可定位；已导入课程会保留。</view>
+        <text class="label">学期名称（选填）</text><input disabled="{{termBusy}}" cursor-spacing="120" class="field" value="{{termName}}" maxlength="40" placeholder="例如：2026 秋季学期" data-key="termName" bindinput="onSetting" />
+        <view class="setup-modes"><button class="setup-mode {{weekSetupMode === 'week' ? 'setup-mode-selected' : ''}}" disabled="{{termBusy}}" data-mode="week" bindtap="onSetupMode">按当前第几周</button><button class="setup-mode {{weekSetupMode === 'date' ? 'setup-mode-selected' : ''}}" disabled="{{termBusy}}" data-mode="date" bindtap="onSetupMode">按开学日期</button></view>
+        <block wx:if="{{weekSetupMode === 'week'}}"><text class="label">今天是第几教学周？</text><input disabled="{{termBusy}}" cursor-spacing="120" class="field" type="number" value="{{currentWeekInput}}" maxlength="2" placeholder="例如：学校课表显示第 8 周，就填写 8" data-key="currentWeekInput" bindinput="onSetting" /><view wx:if="{{calibrationPreview}}" class="calibration-preview">第一周周一将设为 {{calibrationPreview}}</view></block>
+        <block wx:else><text class="label">第一周的周一</text><picker disabled="{{termBusy}}" mode="date" value="{{termStart}}" data-key="termStart" bindchange="onSetting"><view class="field picker-field">{{termStart || '选择第一周周一'}} ▾</view></picker></block>
+        <text class="label">学期周数（1～30）</text><input disabled="{{termBusy}}" cursor-spacing="120" class="field" type="number" value="{{totalWeeks}}" maxlength="2" data-key="totalWeeks" bindinput="onSetting" />
+        <view class="hint">教学周以学校当前课表或校历为准。只需校准一次，此后进入自动定位今天和本周。</view>
+      </view></scroll-view>
+      <view wx:if="{{termError}}" class="course-error">{{termError}}</view>
+      <view class="course-dialog-footer"><view class="actions"><button class="secondary" disabled="{{termBusy}}" bindtap="closeSettings">{{term.termStart ? '取消' : '稍后设置'}}</button><button class="primary" disabled="{{termBusy}}" loading="{{termBusy}}" bindtap="saveSettings">{{termBusy ? '保存中…' : '保存并定位'}}</button></view></view>
+    </view>
+  </view>
+
+</view>
+
+<daily-checkin-dialog />

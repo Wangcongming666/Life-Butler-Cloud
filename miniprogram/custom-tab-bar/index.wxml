@@ -1,0 +1,26 @@
+<view wx:if="{{navigationLoading}}" class="navigation-loading {{appearanceClass}}" catchtouchmove="preventScroll" aria-role="status" aria-label="正在打开{{navigationLabel}}">
+  <view class="loading-content">
+    <view class="loading-spinner" aria-hidden="true"></view>
+    <text class="loading-title">正在打开{{navigationLabel}}</text>
+    <text class="loading-description">内容准备中，请稍候</text>
+    <view class="loading-placeholders" aria-hidden="true">
+      <view class="loading-placeholder"><view class="placeholder-line line-long"></view><view class="placeholder-line line-short"></view></view>
+      <view class="loading-placeholder"><view class="placeholder-line line-long"></view><view class="placeholder-line line-short"></view></view>
+      <view class="loading-placeholder"><view class="placeholder-line line-long"></view><view class="placeholder-line line-short"></view></view>
+    </view>
+  </view>
+</view>
+<view wx:if="{{!keyboardVisible}}" class="tab-host {{appearanceClass}}">
+  <view class="tab-shell">
+    <view class="tab-track">
+      <view wx:if="{{selected >= 0}}" class="selection-rail" style="transform: translateX({{selected * 100}}%);"><view class="selection-fill"></view></view>
+      <button wx:for="{{tabs}}" wx:key="path" class="tab-item {{selected === index ? 'is-selected' : ''}} {{tapped === index ? (pulseFlip ? 'effect-a' : 'effect-b') : ''}}" data-index="{{index}}" bindtap="onTap" hover-class="tab-pressed" hover-stay-time="100" aria-label="{{item.text}}{{selected === index ? (navigationLoading ? '，正在打开' : '，当前页面') : ''}}">
+        <view class="icon-wrap">
+          <view wx:if="{{tapped === index}}" class="tap-wave"></view>
+          <image class="nav-icon" src="/{{selected === index ? item.activeIcon : item.icon}}" mode="aspectFit" aria-hidden="true" />
+        </view>
+        <text class="nav-label">{{item.text}}</text>
+      </button>
+    </view>
+  </view>
+</view>

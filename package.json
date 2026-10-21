@@ -1,0 +1,1 @@
+{"name":"life-butler-cloud","version":"1.0.0","private":true,"scripts":{"test":"node --test tests/*.test.cjs && node scripts/check-shared.cjs && node scripts/check-project.cjs","sync-shared":"node scripts/sync-shared.cjs"}}

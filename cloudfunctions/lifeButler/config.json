@@ -1,0 +1,1 @@
+{"permissions":{"openapi":["subscribeMessage.send"]},"timeout":60,"triggers":[{"name":"todoDueReminders","type":"timer","config":"0 * * * * * *"}]}

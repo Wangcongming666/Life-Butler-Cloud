@@ -1,0 +1,2 @@
+.entry-screen { padding: 100rpx 36rpx; text-align: center; }
+.retry-button { margin-top: 36rpx; }

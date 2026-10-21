@@ -1,0 +1,100 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header"><view class="title">{{title}}</view><view class="subtitle">{{info.subtitle}}</view></view>
+  <scroll-view class="content" scroll-y="{{!budgetFormVisible && !formVisible && !habitId && !detailRecord}}" scroll-into-view="{{scrollTarget}}" scroll-with-animation>
+    <view class="body life-body">
+      <block wx:if="{{type === 'budget'}}">
+        <view class="budget-toolbar"><picker disabled="{{budgetBusy || budgetFormVisible}}" mode="date" fields="month" value="{{monthDate}}" bindchange="onMonth"><view class="field picker-field">{{month}} ▾</view></picker><button class="primary budget-edit-button" size="mini" bindtap="openBudgetForm">设置预算</button></view>
+        <view class="card budget-card"><view class="muted">本月支出</view><view class="big-number">¥ {{budgetView.spentText}}</view><view class="row"><text>预算 ¥ {{budgetView.totalText}}</text><text class="{{budgetView.over ? 'warning' : ''}}">{{budgetView.over ? '已超支' : '剩余'}} ¥ {{budgetView.remainingText}}</text></view><progress percent="{{budgetView.percent}}" activeColor="#4c7c6d" backgroundColor="#e8eeeb" stroke-width="7" /><view class="hint">由本月账目自动统计，修改账目后同步更新。</view></view>
+
+        <view class="card"><view class="section-title">分类支出</view><view wx:for="{{budgetView.categories}}" wx:key="name" class="category-row"><view><view>{{item.name}}</view><view class="muted">{{item.limitText}}</view></view><text class="{{item.over ? 'warning' : ''}}">¥ {{item.spentText}}{{item.over ? ' · 超支' : ''}}</text></view><view wx:if="{{!budgetView.categories.length}}" class="hint">暂无分类支出</view></view>
+      </block>
+      <block wx:else>
+        <view class="row top-actions"><text class="muted">{{summary}}</text><button class="primary" disabled="{{busy}}" bindtap="add" hover-class="pressed">＋ 新增</button></view>
+        <input class="field" value="{{query}}" maxlength="80" placeholder="搜索名称、备注" bindinput="onSearch" />
+        <view class="filter-bar"><button wx:for="{{filters}}" wx:key="id" class="filter {{filter === item.id ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="onFilter">{{item.id === 'all' ? '全部' : item.id === 'done' ? info.doneText : '进行中'}}</button></view>
+        <view wx:for="{{records}}" wx:key="id" id="record-{{item.id}}" class="card record {{type === 'homework' ? 'homework-card' : ''}} {{item.done ? 'record-done' : ''}}">
+          <view class="row record-header" data-id="{{item.id}}" bindtap="openDetail"><view class="section-title record-title">{{item.title}}</view><text class="chip {{item.urgent ? 'urgent' : ''}}">{{item.done ? info.doneText : item.dateHint || '进行中'}}</text></view>
+          <view wx:if="{{type === 'homework'}}" class="homework-meta">
+            <view class="homework-meta-row"><text class="homework-meta-label">课程</text><text class="homework-meta-value">{{item.courseTitle || '未关联课程'}}</text></view>
+            <view class="homework-meta-row"><text class="homework-meta-label">截止</text><text class="homework-meta-value homework-deadline">{{item.date}} {{item.time}}</text></view>
+          </view>
+          <block wx:else><view wx:if="{{item.courseTitle}}" class="detail">课程 · {{item.courseTitle}}</view><view wx:if="{{item.date}}" class="detail">{{info.dateLabel}} · {{item.date}}{{type === 'homework' ? ' ' + item.time : ''}}</view><view wx:if="{{item.purchaseDate}}" class="detail">购买于 {{item.purchaseDate}}</view><view wx:if="{{item.place}}" class="detail">位置 · {{item.place}}</view><view wx:if="{{item.amountText !== ''}}" class="detail">¥ {{item.amountText}}{{type === 'shopping' ? ' / 件' : ''}}</view><view wx:if="{{type === 'shopping' || type === 'expiry'}}" class="detail">数量 · {{item.quantity}}</view></block>
+          <text wx:if="{{item.note}}" class="record-note record-note-preview" data-id="{{item.id}}" bindtap="openDetail">{{item.note}}</text>
+          <view class="record-detail-link" data-id="{{item.id}}" bindtap="openDetail">查看详情{{item.images.length ? ' · ' + item.images.length + ' 张照片' : ''}} ›</view>
+          <block wx:if="{{type === 'habits'}}"><view class="detail">连续 {{item.streak}} 天 · 累计 {{item.checkinCount}} 天</view><view class="actions"><button class="secondary" data-id="{{item.id}}" bindtap="openCalendar">查看月历</button><button class="primary" disabled="{{item.done}}" data-id="{{item.id}}" bindtap="checkin">{{item.checkedToday ? '取消今日打卡' : '今日打卡'}}</button></view></block>
+          <view wx:if="{{type === 'homework'}}" class="homework-footer">
+            <text class="homework-updated">更新于 {{item.updatedText}}</text>
+            <view class="homework-actions">
+              <button class="homework-complete {{item.done ? 'is-complete' : ''}}" disabled="{{busy}}" data-id="{{item.id}}" bindtap="toggle" hover-class="pressed">{{item.done ? '恢复作业' : '完成作业'}}</button>
+              <button class="homework-tool" disabled="{{busy}}" data-id="{{item.id}}" bindtap="edit" hover-class="pressed" aria-label="编辑作业{{item.title}}">编辑</button>
+              <button class="homework-tool homework-delete" disabled="{{busy}}" data-id="{{item.id}}" bindtap="remove" hover-class="pressed" aria-label="删除作业{{item.title}}">删除</button>
+            </view>
+          </view>
+          <view wx:else class="record-footer"><text class="muted">更新 {{item.updatedText}}</text><view class="record-actions"><button class="small-action" data-id="{{item.id}}" bindtap="toggle">{{item.done ? '恢复' : info.action}}</button><button class="small-action" disabled="{{busy}}" data-id="{{item.id}}" bindtap="edit">编辑</button><button class="small-action delete-action" disabled="{{busy}}" data-id="{{item.id}}" bindtap="remove">删除</button></view></view>
+        </view>
+        <view wx:if="{{!records.length}}" class="card empty"><view class="empty-title">还没有对应记录</view><view class="muted">点击新增，开始记录。</view></view>
+      </block>
+      <view class="hint">本地保存 · 提醒仅在打开小程序时展示</view>
+    </view>
+  </scroll-view>
+  <view wx:if="{{formVisible}}" class="info-dialog-mask" catchtouchmove="stopDialogTap" bindtap="closeForm">
+    <view id="life-editor" class="info-dialog" catchtap="stopDialogTap" aria-role="dialog" aria-label="{{draft.id ? '编辑' : '新增'}}{{title}}">
+      <view class="info-dialog-header"><view class="info-dialog-title">{{draft.id ? '编辑' : '新增'}}{{title}}</view><button class="info-dialog-close" disabled="{{busy}}" bindtap="closeForm" aria-label="关闭编辑弹窗">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body">
+          <text class="label">名称</text><input class="field" disabled="{{busy}}" cursor-spacing="120" maxlength="80" value="{{draft.title}}" data-key="title" bindinput="onField" placeholder="写下名称" />
+          <block wx:if="{{type === 'homework'}}"><text class="label">关联课程</text><picker disabled="{{busy}}" range="{{courseNames}}" value="{{courseIndex}}" bindchange="onCourse"><view class="field picker-field">{{draft.courseTitle || '不关联课程'}} ▾</view></picker><view wx:if="{{draft.courseTitle && courseIndex === 0}}" class="hint">原课程已删除，保留名称：{{draft.courseTitle}}</view></block>
+          <block wx:if="{{info.dateLabel}}"><text class="label">{{info.dateLabel}}</text><picker disabled="{{busy}}" mode="date" value="{{draft.date}}" bindchange="onField" data-key="date"><view class="field picker-field">{{draft.date || '选择日期'}} ▾</view></picker><button wx:if="{{type === 'assets' && draft.date}}" class="small-action" bindtap="clearDate">移除保修日期</button></block>
+          <block wx:if="{{type === 'homework'}}"><text class="label">截止时间</text><picker disabled="{{busy}}" mode="time" value="{{draft.time}}" data-key="time" bindchange="onField"><view class="field picker-field">{{draft.time}} ▾</view></picker></block>
+          <block wx:if="{{type === 'assets'}}"><text class="label">购买日期（选填）</text><picker disabled="{{busy}}" mode="date" value="{{draft.purchaseDate}}" data-key="purchaseDate" bindchange="onField"><view class="field picker-field">{{draft.purchaseDate || '选择购买日期'}} ▾</view></picker></block>
+          <block wx:if="{{type === 'assets' || type === 'shopping'}}"><text class="label">{{type === 'assets' ? '购买金额' : '单件预算'}}（选填）</text><input cursor-spacing="120" class="field" disabled="{{busy}}" type="digit" maxlength="10" value="{{draft.amount}}" data-key="amount" bindinput="onField" placeholder="¥ 0.00" /></block>
+          <block wx:if="{{type === 'shopping' || type === 'expiry'}}"><text class="label">数量</text><input cursor-spacing="120" class="field" disabled="{{busy}}" type="number" maxlength="4" value="{{draft.quantity}}" data-key="quantity" bindinput="onField" /></block>
+          <block wx:if="{{type === 'assets' || type === 'expiry'}}"><text class="label">存放位置（选填）</text><input class="field" disabled="{{busy}}" cursor-spacing="120" maxlength="100" value="{{draft.place}}" data-key="place" bindinput="onField" placeholder="例如：书桌抽屉" /></block>
+          <text class="label">{{type === 'homework' ? '作业要求' : '备注'}}（选填）</text><textarea class="field textarea" disabled="{{busy}}" cursor-spacing="120" maxlength="2000" value="{{draft.note}}" data-key="note" bindinput="onField" />
+          <block wx:if="{{type === 'homework' || type === 'assets' || type === 'shopping' || type === 'expiry'}}"><text class="label">{{type === 'assets' ? '商品与凭证照片' : '附件照片'}} · {{draft.images.length}} / 6</text><view class="attachment-grid"><view wx:for="{{draft.images}}" wx:key="*this" class="attachment"><image src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="preview" /><button class="image-remove" disabled="{{busy}}" data-index="{{index}}" catchtap="removeImage" aria-label="移除第{{index + 1}}张照片">×</button></view></view><view class="actions"><button class="secondary" disabled="{{busy || draft.images.length >= 6}}" data-source="camera" bindtap="chooseImage">拍照</button><button class="secondary" disabled="{{busy || draft.images.length >= 6}}" data-source="album" bindtap="chooseImage">相册</button></view></block>
+        <view wx:if="{{formError}}" class="info-dialog-error">{{formError}}</view>
+      </view></scroll-view>
+      <view class="info-dialog-footer actions"><button class="secondary" disabled="{{busy}}" bindtap="closeForm">取消</button><button class="primary" disabled="{{busy}}" loading="{{busy}}" bindtap="save">{{busy ? '处理中…' : '保存'}}</button></view>
+    </view>
+  </view>
+  <view wx:if="{{habitId && type === 'habits'}}" class="info-dialog-mask" catchtouchmove="stopDialogTap" bindtap="closeCalendar">
+    <view id="habit-calendar" class="info-dialog" catchtap="stopDialogTap" aria-role="dialog" aria-label="打卡月历">
+      <view class="info-dialog-header"><view class="info-dialog-title">{{habitTitle}} · 打卡月历</view><button class="info-dialog-close" disabled="{{busy}}" bindtap="closeCalendar" aria-label="关闭打卡月历">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body"><picker disabled="{{busy}}" mode="date" fields="month" value="{{monthDate}}" bindchange="onMonth"><view class="label">{{month}} ▾</view></picker><view class="calendar-grid"><text wx:for="{{weekdays}}" wx:key="*this" class="weekday">{{item}}</text><button wx:for="{{calendar}}" wx:key="key" class="calendar-day {{item.checked ? 'checked' : ''}} {{item.isToday ? 'today' : ''}}" disabled="{{busy || item.blank || item.future}}" data-date="{{item.date}}" bindtap="calendarCheck">{{item.label}}</button></view><view class="hint">点击日期打卡或取消，可补记过去日期。</view></view></scroll-view>
+      <view class="info-dialog-footer"><button class="primary" disabled="{{busy}}" bindtap="closeCalendar">完成</button></view>
+    </view>
+  </view>
+  <view wx:if="{{detailRecord}}" class="info-dialog-mask" catchtouchmove="stopDialogTap" bindtap="closeDetail">
+    <view id="life-detail" class="info-dialog" catchtap="stopDialogTap" aria-role="dialog" aria-label="记录详情">
+      <view class="info-dialog-header"><view class="info-dialog-title">{{detailRecord.title}}</view><button class="info-dialog-close" bindtap="closeDetail" aria-label="关闭记录详情">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y><view class="info-dialog-body">
+        <view class="detail">{{detailRecord.done ? info.doneText : detailRecord.dateHint || '进行中'}}</view>
+        <view wx:if="{{detailRecord.courseTitle}}" class="detail">课程 · {{detailRecord.courseTitle}}</view>
+        <view wx:if="{{detailRecord.date}}" class="detail">{{info.dateLabel}} · {{detailRecord.date}}{{type === 'homework' ? ' ' + detailRecord.time : ''}}</view>
+        <view wx:if="{{detailRecord.purchaseDate}}" class="detail">购买于 {{detailRecord.purchaseDate}}</view>
+        <view wx:if="{{detailRecord.place}}" class="detail">位置 · {{detailRecord.place}}</view>
+        <view wx:if="{{detailRecord.amountText !== ''}}" class="detail">¥ {{detailRecord.amountText}}{{type === 'shopping' ? ' / 件' : ''}}</view>
+        <view wx:if="{{type === 'shopping' || type === 'expiry'}}" class="detail">数量 · {{detailRecord.quantity}}</view>
+        <text wx:if="{{detailRecord.note}}" class="record-note" selectable>{{detailRecord.note}}</text>
+        <view wx:if="{{!detailRecord.note}}" class="hint">暂无{{type === 'homework' ? '作业要求' : '备注'}}</view>
+        <view class="attachment-grid detail-attachments"><image wx:for="{{detailRecord.images}}" wx:key="*this" src="{{item}}" mode="aspectFill" data-id="{{detailRecord.id}}" data-index="{{index}}" bindtap="preview" /></view>
+        <view wx:if="{{type === 'habits'}}" class="detail">连续 {{detailRecord.streak}} 天 · 累计 {{detailRecord.checkinCount}} 天</view>
+        <view class="hint">更新于 {{detailRecord.updatedText}}</view>
+      </view></scroll-view>
+      <view class="info-dialog-footer actions"><button class="secondary" bindtap="closeDetail">关闭</button><button class="primary" data-id="{{detailRecord.id}}" bindtap="edit">编辑</button></view>
+    </view>
+  </view>
+  <view wx:if="{{budgetFormVisible}}" class="budget-dialog-mask" catchtouchmove="stopBudgetTap" bindtap="closeBudgetForm">
+    <view class="budget-dialog" catchtap="stopBudgetTap" aria-role="dialog" aria-label="编辑预算">
+      <view class="budget-dialog-header"><view><view class="section-title">设置预算</view><view class="muted">{{month}}</view></view><button class="budget-dialog-close" disabled="{{budgetBusy}}" bindtap="closeBudgetForm" aria-label="关闭弹窗">×</button></view>
+      <scroll-view class="budget-dialog-scroll" scroll-y>
+        <text class="label">总预算（元）</text><input class="field" type="digit" value="{{budgetTotal}}" maxlength="10" disabled="{{budgetBusy}}" cursor-spacing="120" data-key="budgetTotal" bindinput="onBudget" placeholder="例如：2000" />
+        <text class="label">分类预算（选填，每行一项）</text><textarea class="field textarea budget-category-input" value="{{budgetLines}}" maxlength="1500" disabled="{{budgetBusy}}" cursor-spacing="120" data-key="budgetLines" bindinput="onBudget" placeholder="餐饮 800&#10;交通 200" />
+        <view class="muted budget-allocation-hint">分类预算合计不能超过总预算，可保留部分金额不分配。</view><button wx:if="{{budgetView.total !== null}}" class="budget-delete-button" disabled="{{budgetBusy}}" bindtap="removeBudget">删除预算</button>
+      </scroll-view>
+      <view class="actions budget-dialog-actions"><button class="secondary" disabled="{{budgetBusy}}" bindtap="closeBudgetForm">取消</button><button class="primary" disabled="{{budgetBusy}}" loading="{{budgetBusy}}" bindtap="saveBudget">{{budgetBusy ? '处理中…' : '保存预算'}}</button></view>
+    </view>
+  </view>
+</view>
+
+<daily-checkin-dialog />

@@ -1,0 +1,158 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header">
+    <view class="title">生活里的顺手工具</view>
+    <view class="subtitle">{{tools.length + ' 款离线小工具，点开就能用'}}</view>
+  </view>
+  <scroll-view class="content" scroll-y="{{!activeTool}}">
+    <view class="body">
+      <view class="schedule-entry" hover-class="tile-pressed" bindtap="openSchedule" aria-role="button" aria-label="打开我的课表">
+        <view class="schedule-entry-icon">课</view><view class="schedule-entry-copy"><view class="section-title">课表与考试</view><view class="muted">长春理工大学 · 课程与考试安排</view></view><text class="schedule-entry-arrow">›</text>
+      </view>
+      <view class="schedule-entry" hover-class="tile-pressed" bindtap="openNotes" aria-role="button" aria-label="打开随记">
+        <view class="schedule-entry-icon">记</view><view class="schedule-entry-copy"><view class="section-title">随记</view><view class="muted">拍下好物 · 留下价格与评论</view></view><text class="schedule-entry-arrow">›</text>
+      </view>
+      <view wx:if="{{alerts.length}}" class="card"><view class="section-title">近期提醒</view><view wx:for="{{alerts}}" wx:key="id" class="local-alert" data-id="{{item.id}}" data-type="{{item.type}}" bindtap="openAlert"><view>{{item.title}}</view><view class="muted">{{item.message}} ›</view></view></view>
+      <view class="tool-list-heading"><text class="section-title">生活管理</text><text class="muted">{{managers.length}} 项本地功能</text></view>
+      <view class="tool-grid manager-grid">
+        <view wx:for="{{managers}}" wx:key="type" class="tool-slot">
+          <view class="tool-tile" data-type="{{item.type}}" bindtap="openManager" hover-class="tile-pressed" aria-role="button" aria-label="打开{{item.title}}">
+            <image class="tool-background" src="/assets/tools/{{item.background}}.svg" mode="aspectFill" />
+            <view class="tool-tile-content">
+              <view class="tool-icon tone-mint">{{item.icon}}</view>
+              <view class="tool-name">{{item.title}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <input class="field tool-search" value="{{toolQuery}}" maxlength="40" placeholder="搜索计算工具，例如：日期、折扣" bindinput="onToolSearch" confirm-type="search" />
+      <scroll-view class="categories" scroll-x enable-flex>
+        <view class="category-strip">
+          <button wx:for="{{toolCategories}}" wx:key="*this" class="category-button {{toolCategory === item ? 'category-selected' : ''}}" data-category="{{item}}" bindtap="onToolCategory" hover-class="pressed" aria-label="筛选{{item}}工具">{{item}}</button>
+        </view>
+      </scroll-view>
+      <view class="tool-list-heading"><text class="section-title">{{toolCategory === '全部' ? '全部工具' : toolCategory}}</text><text class="muted">{{filteredTools.length}} 款可用</text></view>
+      <view class="tool-grid">
+        <view wx:for="{{filteredTools}}" wx:key="id" class="tool-slot">
+          <view class="tool-tile" hover-class="tile-pressed" hover-stay-time="100" data-id="{{item.id}}" bindtap="openTool" aria-role="button" aria-label="打开{{item.title}}，{{item.description}}">
+            <image class="tool-background" src="{{item.background}}" mode="aspectFill" aria-hidden="true" />
+            <view class="tool-tile-content">
+              <view class="tool-icon tone-{{item.tone}}">{{item.icon}}</view>
+              <view class="tool-name">{{item.title}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{!filteredTools.length}}" class="card empty"><view class="empty-title">没有找到对应工具</view><view class="muted">试试其他关键词，或查看全部工具。</view><button class="secondary reset-filter" bindtap="resetToolFilters">查看全部工具</button></view>
+      <view class="tool-footnote">无需联网 · 无需登录 · 计算内容仅留在当前页面</view>
+    </view>
+  </scroll-view>
+  <view wx:if="{{activeTool}}" class="info-dialog-mask" catchtouchmove="preventToolTouch" bindtap="backToTools"><view class="info-dialog tool-dialog" catchtap="preventToolTouch" aria-role="dialog" aria-label="{{activeTitle}}">
+    <view class="info-dialog-header"><view class="info-dialog-title">{{activeTitle}}</view><button class="info-dialog-close" bindtap="backToTools" aria-label="关闭工具">×</button></view>
+    <scroll-view class="info-dialog-scroll" scroll-y>
+    <view class="info-dialog-body">
+      <view wx:if="{{extraSpec}}" class="card">
+        <view class="section-title">{{extraSpec.title}}</view>
+        <view wx:for="{{extraForm}}" wx:key="key" wx:for-item="field">
+          <text class="label">{{field.label}}</text>
+          <picker wx:if="{{field.type === 'date'}}" mode="date" start="1000-01-01" end="9999-12-31" value="{{field.value}}" data-key="{{field.key}}" bindchange="onCalculatorInput"><view class="field picker-field">{{field.value}} ▾</view></picker>
+          <picker wx:elif="{{field.type === 'time'}}" mode="time" value="{{field.value}}" data-key="{{field.key}}" bindchange="onCalculatorInput"><view class="field picker-field">{{field.value}} ▾</view></picker>
+          <picker wx:elif="{{field.type === 'picker'}}" range="{{field.options}}" value="{{field.value}}" data-key="{{field.key}}" bindchange="onCalculatorInput"><view class="field picker-field">{{field.options[field.value]}} ▾</view></picker>
+          <input cursor-spacing="120" wx:else class="field" type="{{field.type}}" maxlength="64" value="{{field.value}}" placeholder="{{field.placeholder}}" data-key="{{field.key}}" bindinput="onCalculatorInput" />
+        </view>
+        <view class="actions"><button class="primary" hover-class="pressed" bindtap="calculateExtra">{{extraSpec.button}}</button></view>
+        <view wx:if="{{extraResult}}" class="result tinted">
+          <view class="muted">{{extraResult.label}}</view><view class="extra-result-value">{{extraResult.value}}</view>
+          <view wx:for="{{extraResult.rows}}" wx:key="label" class="result-line"><text>{{item.label}}</text><text>{{item.value}}</text></view>
+        </view>
+        <view class="hint">{{extraSpec.hint}}</view>
+      </view>
+      <view wx:if="{{activeTool === 'mortgage'}}" class="card">
+        <view class="row"><view class="section-title">房贷计算器</view><text class="chip">商业贷款估算</text></view>
+        <text class="label">贷款金额（万元）</text><input cursor-spacing="120" class="field" type="digit" value="{{principal}}" placeholder="例如：100" bindinput="onPrincipal" />
+        <text class="label">年利率（%）</text><input cursor-spacing="120" class="field" type="digit" value="{{annualRate}}" bindinput="onRate" />
+        <text class="label">贷款年限（年）</text><input cursor-spacing="120" class="field" type="number" value="{{years}}" bindinput="onYears" />
+        <text class="label">还款方式</text><picker range="{{methods}}" value="{{method}}" bindchange="onMethod"><view class="field picker-field">{{methods[method]}} ▾</view></picker>
+        <view class="actions"><button class="primary" hover-class="pressed" bindtap="calculateMortgage">计算还款</button></view>
+        <view wx:if="{{mortgage}}" class="result tinted">
+          <view class="muted">{{mortgage.monthlyLabel}}</view><view class="big-number">{{mortgage.first}}</view>
+          <view class="result-line"><text>总利息</text><text>¥ {{mortgage.interest}}</text></view>
+          <view class="result-line"><text>还款总额</text><text>¥ {{mortgage.total}}</text></view>
+          <view wx:if="{{mortgage.decreasing}}" class="result-line"><text>末月还款</text><text>¥ {{mortgage.last}}</text></view>
+          <view class="muted">{{mortgage.methodText}} · 共 {{mortgage.months}} 期</view>
+        </view>
+        <view class="hint">按输入的固定利率估算，不含费用；实际月供与银行的计息、舍入及利率调整方式有关。</view>
+      </view>
+      <view wx:if="{{activeTool === 'unit'}}" class="card">
+        <view class="section-title">单位换算</view>
+        <text class="label">换算类型</text><picker range="{{types}}" value="{{type}}" bindchange="onType"><view class="field picker-field">{{types[type]}} ▾</view></picker>
+        <text class="label">数值{{type === 2 ? '（支持负数）' : ''}}</text><input cursor-spacing="120" class="field" type="text" maxlength="30" value="{{unitValue}}" placeholder="请输入待换算数值" bindinput="onUnitValue" />
+        <text class="label">从 → 到</text>
+        <view class="inline-pickers">
+          <picker range="{{units}}" value="{{from}}" bindchange="onFrom"><view class="field picker-field">{{units[from]}} ▾</view></picker>
+          <picker range="{{units}}" value="{{to}}" bindchange="onTo"><view class="field picker-field">{{units[to]}} ▾</view></picker>
+        </view>
+        <view class="actions"><button class="secondary" bindtap="swapUnits">交换单位</button><button class="primary" hover-class="pressed" bindtap="calculateUnit">开始换算</button></view>
+        <view wx:if="{{unitResult}}" class="result blue"><view class="muted">换算结果</view><view class="unit-result">{{unitResult}}</view></view>
+        <view class="hint">斤按中国大陆市斤计算：1 斤 = 0.5 千克。换算结果保留约 10 位有效数字。</view>
+      </view>
+      <view wx:if="{{activeTool === 'date'}}" class="card">
+        <view class="section-title">计算两个日期的距离</view>
+        <text class="label">开始日期</text><picker mode="date" start="1000-01-01" end="9999-12-31" value="{{dateStart}}" data-field="dateStart" bindchange="onExtraInput"><view class="field picker-field">{{dateStart}} ▾</view></picker>
+        <text class="label">结束日期</text><picker mode="date" start="1000-01-01" end="9999-12-31" value="{{dateEnd}}" data-field="dateEnd" bindchange="onExtraInput"><view class="field picker-field">{{dateEnd}} ▾</view></picker>
+        <view class="actions"><button class="primary" hover-class="pressed" bindtap="calculateDate">计算间隔</button></view>
+        <view wx:if="{{dateResult}}" class="result tinted"><view class="muted">{{dateResult.direction}}</view><view class="big-number">{{dateResult.days}} <text class="result-unit">天</text></view><view class="muted">相当于 {{dateResult.weeks}} 周零 {{dateResult.remainder}} 天</view></view>
+        <view class="hint">按自然日之差计算，不额外计入开始当天。同一天的间隔为 0 天。</view>
+      </view>
+      <view wx:if="{{activeTool === 'bmi'}}" class="card">
+        <view class="section-title">计算身体质量指数</view>
+        <text class="label">身高（厘米）</text><input cursor-spacing="120" class="field" type="digit" maxlength="6" value="{{bmiHeight}}" placeholder="例如：175" data-field="bmiHeight" bindinput="onExtraInput" />
+        <text class="label">体重（千克）</text><input cursor-spacing="120" class="field" type="digit" maxlength="6" value="{{bmiWeight}}" placeholder="例如：70" data-field="bmiWeight" bindinput="onExtraInput" />
+        <view class="actions"><button class="primary" hover-class="pressed" bindtap="calculateBMI">计算 BMI</button></view>
+        <view wx:if="{{bmiResult}}" class="result tinted"><view class="muted">你的 BMI 数值</view><view class="big-number">{{bmiResult}}</view></view>
+        <view class="hint">计算公式：体重（千克）÷ 身高（米）的平方。本工具仅计算数值，不进行健康评估。</view>
+      </view>
+      <view wx:if="{{activeTool === 'savings'}}" class="card">
+        <view class="section-title">离小目标，还有多远</view>
+        <text class="label">目标金额（元）</text><input cursor-spacing="120" class="field" type="digit" maxlength="10" value="{{savingsTarget}}" placeholder="例如：10000" data-field="savingsTarget" bindinput="onExtraInput" />
+        <text class="label">已经存下（元）</text><input cursor-spacing="120" class="field" type="digit" maxlength="10" value="{{savingsCurrent}}" data-field="savingsCurrent" bindinput="onExtraInput" />
+        <text class="label">每月计划存入（元）</text><input cursor-spacing="120" class="field" type="digit" maxlength="10" value="{{savingsMonthly}}" placeholder="例如：1000" data-field="savingsMonthly" bindinput="onExtraInput" />
+        <view class="actions"><button class="primary" hover-class="pressed" bindtap="calculateSavings">计算储蓄计划</button></view>
+        <view wx:if="{{savingsResult}}" class="result tinted"><view class="muted">{{savingsResult.months ? '预计还需' : '目标已达成'}}</view><view class="big-number">{{savingsResult.months}} <text class="result-unit">个月</text></view><view class="muted">距离目标还差 ¥ {{savingsResult.remaining}}</view></view>
+        <view class="hint">按每月固定存入计算，不计利息；不足一个月按一个月计算。</view>
+      </view>
+      <view wx:if="{{activeTool === 'discount'}}" class="card">
+        <view class="section-title">这次购物，能省多少</view>
+        <text class="label">商品原价（元）</text><input cursor-spacing="120" class="field" type="digit" maxlength="10" value="{{discountOriginal}}" placeholder="例如：100" data-field="discountOriginal" bindinput="onExtraInput" />
+        <text class="label">折扣（几折，0～10）</text><input cursor-spacing="120" class="field" type="digit" maxlength="6" value="{{discountFold}}" placeholder="例如：8.5 表示八五折" data-field="discountFold" bindinput="onExtraInput" />
+        <text class="label">折后再减优惠（元）</text><input cursor-spacing="120" class="field" type="digit" maxlength="10" value="{{discountCoupon}}" data-field="discountCoupon" bindinput="onExtraInput" />
+        <view class="actions"><button class="primary" hover-class="pressed" bindtap="calculateDiscount">计算到手价</button></view>
+        <view wx:if="{{discountResult}}" class="result blue"><view class="muted">预计到手价（元）</view><view class="big-number">{{discountResult.final}}</view><view class="muted">相比原价节省 ¥ {{discountResult.saved}}</view></view>
+        <view class="hint">先打折，按分四舍五入，再减优惠；到手价最低为 0 元，不含运费。</view>
+      </view>
+      <view wx:if="{{activeTool === 'random'}}" class="card">
+        <view class="section-title">把纠结交给小小的随机</view>
+        <text class="label">备选项（每行一个，至少两个）</text><textarea cursor-spacing="120" class="field options-input" value="{{randomOptions}}" maxlength="2000" placeholder="例如：\n面条\n米饭\n饺子" data-field="randomOptions" bindinput="onExtraInput" />
+        <view class="actions"><button class="primary" hover-class="pressed" bindtap="chooseRandom">{{randomResult ? '再选一次' : '帮我选一个'}}</button></view>
+        <view wx:if="{{randomResult}}" class="result tinted"><view class="muted">这次选中的是</view><view class="unit-result">{{randomResult}}</view></view>
+        <view class="hint">自动忽略空行与重复选项，每个不同选项被选中的机会相同。再次抽取可能得到同一个结果。</view>
+      </view>
+      <view wx:if="{{activeTool === 'text'}}" class="card">
+        <view class="row"><view class="section-title">输入文字，即时统计</view><button class="small-action" bindtap="clearText">清空</button></view>
+        <textarea cursor-spacing="120" class="field text-input" value="{{textValue}}" maxlength="10000" placeholder="在这里输入或粘贴文字……" bindinput="onTextInput" />
+        <view class="text-metrics">
+          <view class="text-metric"><view class="muted">字符数</view><view class="metric-value">{{textResult.characters}}</view></view>
+          <view class="text-metric"><view class="muted">不含空白</view><view class="metric-value">{{textResult.nonWhitespace}}</view></view>
+          <view class="text-metric"><view class="muted">汉字数</view><view class="metric-value">{{textResult.chinese}}</view></view>
+          <view class="text-metric"><view class="muted">英文单词</view><view class="metric-value">{{textResult.englishWords}}</view></view>
+          <view class="text-metric"><view class="muted">行数</view><view class="metric-value">{{textResult.lines}}</view></view>
+        </view>
+        <view class="hint">字符数按 Unicode 码点统计，包含空格与换行；组合表情可能计为多个字符。最多输入 10000 个字符。</view>
+      </view>
+    </view>
+  </scroll-view>
+    <view class="info-dialog-footer"><button class="secondary" bindtap="backToTools">关闭</button></view>
+  </view></view>
+</view>
+
+<daily-checkin-dialog />

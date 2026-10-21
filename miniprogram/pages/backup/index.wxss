@@ -1,0 +1,6 @@
+.backup-body { padding-bottom: calc(48rpx + env(safe-area-inset-bottom)); }
+.backup-text { height: 280rpx; padding: 22rpx; word-break: break-all; line-height: 1.6; }
+.preview-row { display: flex; justify-content: space-between; padding: 20rpx 0; border-bottom: 1rpx solid #edf2ef; }
+.warning { margin-top: 24rpx; padding: 20rpx; background: #fbf1e8; color: #a65b42; line-height: 1.6; border-radius: 16rpx; }
+
+.restore-preview{margin-top:32rpx}.merge-title{margin-top:32rpx}.info-dialog .actions{display:flex;gap:12rpx;margin-top:16rpx}.info-dialog .actions button{flex:1;min-width:0;padding:0 12rpx}.info-dialog-footer .actions:first-child{margin-top:0}

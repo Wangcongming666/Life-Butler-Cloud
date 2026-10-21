@@ -1,0 +1,76 @@
+<view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
+<view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
+  <view class="header"><view class="eyebrow">LITTLE FINDS</view><view class="title">把喜欢，留在这里。</view><view class="subtitle">拍下商品，写点想法，慢慢挑选。</view></view>
+  <scroll-view class="content" scroll-y="{{!formVisible && !detailNote}}" scroll-with-animation scroll-into-view="{{scrollTarget}}">
+    <view class="body notes-body">
+      <view class="capture-bar">
+        <button class="primary" hover-class="pressed" disabled="{{busy || dataError}}" bindtap="quickCapture">＋ 拍照随记</button>
+        <button class="secondary" hover-class="pressed" disabled="{{busy || dataError}}" bindtap="openNew">写随记</button>
+      </view>
+      <view class="row list-heading"><text class="section-title">我的随记</text><text class="muted">共 {{total}} 条</text></view>
+      <input class="field search" value="{{query}}" placeholder="搜索标题或评论" maxlength="80" bindinput="onSearch" confirm-type="search" />
+      <view wx:if="{{dataError}}" class="card empty"><view class="empty-title">暂时无法读取随记</view><view class="muted">请到「我的」导出原始数据备份。</view></view>
+      <view wx:elif="{{!notes.length}}" class="card empty"><view class="empty-mark">记</view><view class="empty-title">{{query ? '没有找到这条随记' : '遇到喜欢的，随手拍下来'}}</view><view class="muted">{{query ? '换个关键词试试' : '照片、价格和想法，放在一起收藏。'}}</view></view>
+      <view wx:for="{{notes}}" wx:key="id" class="note-card">
+        <view wx:if="{{item.images.length}}" class="note-gallery {{item.images.length > 1 ? 'has-stack' : ''}}">
+          <view class="photo-stage">
+            <image wx:if="{{item.images.length > 2}}" class="stack-back stack-back-far" src="{{item.images[(item.currentImage + 2) % item.images.length]}}" mode="aspectFill" lazy-load aria-hidden="true" />
+            <image wx:if="{{item.images.length > 1}}" class="stack-back stack-back-near" src="{{item.images[(item.currentImage + 1) % item.images.length]}}" mode="aspectFill" lazy-load aria-hidden="true" />
+            <swiper class="photo-swiper" current="{{item.currentImage}}" duration="280" data-id="{{item.id}}" bindchange="onGalleryChange" aria-label="{{item.title}}的照片，左右滑动切换">
+              <swiper-item wx:for="{{item.images}}" wx:key="*this" wx:for-item="photo" wx:for-index="photoIndex">
+                <image class="note-cover" src="{{photo}}" mode="aspectFit" lazy-load data-id="{{item.id}}" bindtap="previewNote" aria-role="button" aria-label="查看第{{photoIndex + 1}}张照片大图" />
+              </swiper-item>
+            </swiper>
+            <text class="photo-count">{{item.currentImage + 1}} / {{item.images.length}}</text>
+          </view>
+          <view wx:if="{{item.images.length > 1}}" class="gallery-controls">
+            <button class="gallery-arrow" disabled="{{item.currentImage === 0}}" data-id="{{item.id}}" data-step="-1" bindtap="switchPhoto" hover-class="pressed" aria-label="上一张照片">‹</button>
+            <view class="gallery-status"><view class="gallery-dots"><view wx:for="{{item.images}}" wx:key="*this" wx:for-item="dot" wx:for-index="dotIndex" class="gallery-dot {{dotIndex === item.currentImage ? 'gallery-dot-active' : ''}}"></view></view><text class="gallery-hint">左右滑动切换</text></view>
+            <button class="gallery-arrow" disabled="{{item.currentImage === item.images.length - 1}}" data-id="{{item.id}}" data-step="1" bindtap="switchPhoto" hover-class="pressed" aria-label="下一张照片">›</button>
+          </view>
+        </view>
+        <view class="note-copy">
+          <view class="row note-heading" data-id="{{item.id}}" bindtap="openDetail" aria-role="button" aria-label="查看随记详情"><view class="note-title">{{item.title}}</view><text wx:if="{{item.priceText !== ''}}" class="note-price">¥ {{item.priceText}}</text></view>
+          <text wx:if="{{item.comment}}" class="note-comment note-comment-preview" data-id="{{item.id}}" bindtap="openDetail">{{item.comment}}</text>
+          <view class="note-footer"><view class="note-time"><view>记录于 {{item.createdText}}</view><view wx:if="{{item.updatedAt !== item.createdAt}}">更新于 {{item.updatedText}}</view></view><view class="note-actions"><button data-id="{{item.id}}" bindtap="openDetail" hover-class="pressed">详情</button><button disabled="{{busy}}" data-id="{{item.id}}" bindtap="toShopping" hover-class="pressed">加入购物</button><button disabled="{{busy}}" data-id="{{item.id}}" bindtap="openEdit" hover-class="pressed">编辑</button><button disabled="{{busy}}" class="delete-action" data-id="{{item.id}}" bindtap="remove" hover-class="pressed">删除</button></view></view>
+        </view>
+      </view>
+      <view class="local-tip">仅保存在本机 · 不会公开分享</view>
+    </view>
+  </scroll-view>
+  <view wx:if="{{formVisible}}" class="info-dialog-mask" catchtouchmove="noop">
+    <view id="note-editor" class="info-dialog note-editor-dialog" aria-role="dialog" aria-modal="true" aria-label="{{editId ? '编辑随记' : '新建随记'}}">
+      <view class="info-dialog-header"><view class="info-dialog-title">{{editId ? '编辑随记' : '新建随记'}}</view><button class="info-dialog-close" disabled="{{busy}}" bindtap="closeForm" aria-label="关闭随记编辑">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y enhanced show-scrollbar="false"><view class="info-dialog-body">
+        <view class="muted">{{images.length}} / 6 张照片</view>
+        <view wx:if="{{images.length}}" class="photo-toolbar"><text class="muted">照片</text><button class="clear-photos" disabled="{{busy}}" bindtap="clearImages" hover-class="pressed">清空照片</button></view>
+        <view class="photo-grid">
+          <view wx:for="{{images}}" wx:key="*this" class="photo-item">
+            <image class="draft-image" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="previewDraft" aria-role="button" aria-label="预览第{{index + 1}}张图片" />
+            <button class="photo-close" disabled="{{busy}}" data-index="{{index}}" catchtap="removeImage" hover-class="pressed" aria-label="删除第{{index + 1}}张照片"><view class="close-disc"><view class="close-stroke close-stroke-a"></view><view class="close-stroke close-stroke-b"></view></view></button>
+            <view class="photo-actions"><button disabled="{{busy}}" data-index="{{index}}" bindtap="editImage" hover-class="pressed">编辑图片</button></view>
+          </view>
+        </view>
+        <view class="actions photo-pickers"><button class="secondary" disabled="{{busy || images.length >= 6}}" bindtap="takePhoto">拍照</button><button class="secondary" disabled="{{busy || images.length >= 6}}" bindtap="chooseAlbum">从相册选择</button></view>
+        <text class="label">标题</text><input cursor-spacing="120" class="field" disabled="{{busy}}" value="{{titleInput}}" maxlength="80" placeholder="例如：喜欢的一款咖啡杯（可不填）" data-key="titleInput" bindinput="onField" />
+        <text class="label">商品价格（选填）</text><input cursor-spacing="120" class="field" disabled="{{busy}}" type="digit" value="{{priceInput}}" maxlength="10" placeholder="¥ 0.00" data-key="priceInput" bindinput="onField" />
+        <text class="label">我的评论</text><textarea cursor-spacing="120" class="field textarea comment-input" disabled="{{busy}}" value="{{commentInput}}" maxlength="2000" placeholder="好在哪里？在哪看到的？值得买吗？" data-key="commentInput" bindinput="onField" />
+      </view></scroll-view>
+      <view class="info-dialog-footer"><view wx:if="{{formError}}" class="info-dialog-error" role="alert">{{formError}}</view><view class="actions"><button class="secondary" disabled="{{busy}}" bindtap="closeForm">取消</button><button class="primary" disabled="{{busy}}" loading="{{busy}}" bindtap="save">保存随记</button></view></view>
+    </view>
+  </view>
+  <view wx:if="{{detailNote}}" class="info-dialog-mask" catchtouchmove="noop">
+    <view id="note-detail" class="info-dialog note-detail-dialog" aria-role="dialog" aria-modal="true" aria-label="随记详情">
+      <view class="info-dialog-header"><view class="info-dialog-title">随记详情</view><button class="info-dialog-close" disabled="{{busy}}" bindtap="closeDetail" aria-label="关闭随记详情">×</button></view>
+      <scroll-view class="info-dialog-scroll" scroll-y enhanced show-scrollbar="false"><view class="info-dialog-body">
+        <view class="detail-title">{{detailNote.title}}</view><view wx:if="{{detailNote.priceText !== ''}}" class="note-price">¥ {{detailNote.priceText}}</view>
+        <text wx:if="{{detailNote.comment}}" class="note-comment" selectable>{{detailNote.comment}}</text>
+        <view class="detail-photos"><image wx:for="{{detailNote.images}}" wx:key="*this" class="detail-photo" src="{{item}}" mode="widthFix" data-index="{{index}}" bindtap="previewDetail" aria-role="button" aria-label="预览第{{index + 1}}张照片" /></view>
+        <view class="note-time"><view>记录于 {{detailNote.createdText}}</view><view wx:if="{{detailNote.updatedAt !== detailNote.createdAt}}">更新于 {{detailNote.updatedText}}</view></view>
+      </view></scroll-view>
+      <view class="info-dialog-footer"><view class="actions"><button class="secondary" disabled="{{busy}}" data-id="{{detailNote.id}}" bindtap="toShopping">加入购物</button><button class="primary" disabled="{{busy}}" data-id="{{detailNote.id}}" bindtap="openEdit">编辑随记</button></view></view>
+    </view>
+  </view>
+</view>
+
+<daily-checkin-dialog />
