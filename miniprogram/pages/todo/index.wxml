@@ -1,24 +1,22 @@
 <view wx:if="{{!cloudReady}}" class="cloud-gate"><view class="title">连接云端记录</view><view class="hint">{{cloudMessage}}</view><button class="primary" loading="{{cloudStatus === 'syncing'}}" disabled="{{cloudStatus === 'syncing'}}" bindtap="syncNow">重试连接</button></view>
 <view wx:if="{{cloudReady}}" class="screen {{appearanceClass}}">
-  <view class="header">
-    <view class="eyebrow">LIFE BUTLER / 01</view>
-    <view class="title">把日子，慢慢理顺。</view>
-    <view class="subtitle">还有 {{pending}} 件小事，等你从容完成</view>
+  <view class="header todo-header">
+    <view class="todo-heading"><view class="title todo-page-title">待办</view><text class="todo-count">{{pending}} 项待完成</text></view>
+    <button class="primary todo-add-button" size="mini" hover-class="pressed" bindtap="openAdd" aria-label="新增待办">＋ 新增</button>
   </view>
   <scroll-view class="content" scroll-y="{{!formVisible && !galleryMounted}}" scroll-into-view="{{scrollTarget}}" scroll-with-animation>
     <view class="body">
-      <view class="card tinted todo-create">
-        <view class="todo-create-copy"><view class="section-title">留一点时间给生活</view><view class="muted">每完成一件，轻松一点。</view></view>
-        <button class="primary todo-create-button" size="mini" hover-class="pressed" bindtap="openAdd">＋ 新增</button>
-      </view>
-      <view wx:if="{{alerts.length}}" class="card"><view class="section-title">近期提醒</view><view wx:for="{{alerts}}" wx:key="id" class="hint" data-id="{{item.id}}" data-type="{{item.type}}" bindtap="openAlert">{{item.title}} · {{item.message}} ›</view></view>
-      <view wx:if="{{notificationStateError}}" class="card hint"><view>通知设置暂不可用：{{notificationStateError}}</view><button class="small-action" disabled="{{!!remindingId}}" bindtap="refreshReminderStates">重试读取通知设置</button></view>
-      <view class="card controls">
+      <view class="controls todo-controls">
         <view class="todo-status-tabs"><button size="mini" class="status-tab {{filter === 1 ? 'status-tab-active' : ''}}" data-filter="1" bindtap="onStatus">未完成 {{pending - overdueCount}}</button><button size="mini" class="status-tab {{filter === 3 ? 'status-tab-active' : ''}}" data-filter="3" bindtap="onStatus">已逾期 {{overdueCount}}</button><button size="mini" class="status-tab {{filter === 2 ? 'status-tab-active' : ''}}" data-filter="2" bindtap="onStatus">已完成 {{completed}}</button></view>
         <input class="field" value="{{query}}" maxlength="80" placeholder="搜索待办事项" bindinput="onQuery" />
         <view class="todo-filter-row">
           <view class="range-filter-controls"><button size="mini" class="filter-control range-checkbox" bindtap="toggleRangeFilter" aria-role="checkbox" aria-checked="{{rangeActive}}" aria-label="开启时间范围筛选"><view class="range-checkbox-box {{rangeActive ? 'checked' : ''}}"><view class="check-mark"></view></view></button><button size="mini" class="filter-control range-trigger {{rangeActive ? 'range-confirm' : ''}}" bindtap="openRange" aria-label="选择截止时间范围，当前{{rangeLabel}}"><text class="range-trigger-label">时间范围 ▾</text></button></view><button size="mini" class="filter-control" bindtap="toggleSort" aria-label="{{sort === 0 ? '当前正序，点击切换倒序' : '当前倒序，点击切换正序'}}">{{sort === 0 ? '正序 ↑' : '倒序 ↓'}}</button>
         </view>
+      </view>
+      <view wx:if="{{notificationStateError}}" class="todo-inline-notice" aria-role="alert"><text>{{notificationStateError}}</text><button class="small-action" size="mini" disabled="{{!!remindingId}}" bindtap="refreshReminderStates">重试</button></view>
+      <view wx:if="{{alerts.length}}" class="todo-reminders">
+        <button class="todo-reminder-summary" size="mini" bindtap="toggleAlerts" aria-expanded="{{alertsExpanded}}" aria-label="{{alertsExpanded ? '收起近期提醒' : '展开近期提醒'}}"><text>近期提醒 · {{alerts.length}} 条</text><text class="todo-reminder-preview">{{alerts[0].title}}</text><text>{{alertsExpanded ? '收起 ▴' : '展开 ▾'}}</text></button>
+        <view wx:if="{{alertsExpanded}}" class="todo-reminder-details"><view wx:for="{{alerts}}" wx:key="id" class="todo-reminder-item" data-id="{{item.id}}" data-type="{{item.type}}" bindtap="openAlert" aria-role="button"><text>{{item.title}}</text><text class="muted">{{item.message}} ›</text></view></view>
       </view>
       <view wx:for="{{todos}}" wx:key="id" class="card todo-card {{item.done ? 'todo-card-done' : ''}}">
         <view class="todo-main">

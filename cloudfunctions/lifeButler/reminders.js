@@ -2,6 +2,7 @@ const {digest} = require('./service');
 const LEAD = 30 * 60 * 1000;
 const validId = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(value);
 const fail = message => { throw Error(message); };
+const tokenUnavailable = message => /\b(?:invalid|missing)\s+wxCloudApiToken\b/i.test(String(message || ''));
 const keyFor = (owner, generation, id, dueAt) => digest(['todo-reminder', owner, generation, id, dueAt]);
 function timeText(value) {
   const d = new Date(value + 8 * 3600000), two = n => String(n).padStart(2, '0');
@@ -34,7 +35,7 @@ function createReminders({records, queue, send, config, now = Date.now}) {
       const reminder = await queue.get(keyFor(owner, state.meta.generation, row.id, todo.dueAt));
       const active = reminder && reminder.templateId === config.templateId && (reminder.reminderEpoch || 0) === (row.reminderEpoch || 0) && !todo.done && todo.dueAt > at;
       const current = active ? reminder.status : 'off';
-      return {id: row.id, dueAt: todo.dueAt, status: current, enabled: current === 'pending' || current === 'sending'};
+      return {id: row.id, dueAt: todo.dueAt, status: current, enabled: current === 'pending' || current === 'sending', retrying: current === 'pending' && tokenUnavailable(reminder.error)};
     }));
     return {ok: true, reminders: result};
   }
@@ -50,10 +51,24 @@ function createReminders({records, queue, send, config, now = Date.now}) {
     if (value.status === 'sending') fail('提醒正在发送，已无法撤回，请稍后刷新状态');
     return {ok: true, status: value.status};
   }
-  async function run(at = now()) {
+  async function runForOwner(owner) {
+    if (!validId(owner)) fail('请从已登录的小程序测试提醒');
+    configured();
+    const at = now(), state = await records.load(owner);
+    // 以当前用户的记录逐条取提醒，不扫描或执行其他用户的队列，也不需要额外复合索引。
+    const rows = state.records.filter(row => row.kind === 'todos' && !row.deleted && !row.value.done && row.value.dueAt > at && row.value.dueAt <= at + LEAD)
+      .sort((a, b) => a.value.dueAt - b.value.dueAt).slice(0, 40);
+    const reminders = await Promise.all(rows.map(async row => {
+      const key = keyFor(owner, state.meta.generation, row.id, row.value.dueAt);
+      const reminder = await queue.get(key);
+      return reminder && reminder.owner === owner && reminder.status === 'pending' && reminder.remindAt <= at ? {...reminder, key} : null;
+    }));
+    return {...await run(at, reminders.filter(Boolean)), scope: 'current-user'};
+  }
+  async function run(at = now(), candidates) {
     configured();
     const report = {sent: 0, cancelled: 0, failed: 0};
-    for (const reminder of await queue.list(at)) {
+    for (const reminder of candidates === undefined ? await queue.list(at) : candidates) {
       // 先读取最新业务记录，读失败时保留 pending，供下次定时器重试。
       let state;
       try { state = await records.load(reminder.owner); }
@@ -78,29 +93,50 @@ function createReminders({records, queue, send, config, now = Date.now}) {
           }});
       } catch (error) {
         const code = error.errCode === undefined ? error.errcode : error.errCode;
+        const message = String(error.errMsg || error.message || error).slice(0, 300), retryable = tokenUnavailable(message);
         // 微信业务错误（如 43101 拒绝接收）可确认未发送；SDK/网络错误保留 unknown。
-        await queue.finish(reminder.key, {status: Number.isInteger(code) && code > 0 ? 'failed' : 'unknown', finishedAt: at,
-          errorCode: Number.isInteger(code) ? code : null, error: String(error.errMsg || error.message || error).slice(0, 300)});
+        // 票据在云调用层即被明确拒绝，微信未受理；保留 pending 供有效触发重试。
+        await queue.finish(reminder.key, {status: retryable ? 'pending' : Number.isInteger(code) && code > 0 ? 'failed' : 'unknown',
+          ...(retryable ? {lastAttemptAt: sendAt} : {finishedAt: sendAt}), errorCode: Number.isInteger(code) ? code : null, error: message});
+        console.error('reminder delivery failed',{code: Number.isInteger(code) ? code : 'unknown',retryable});
         report.failed++; continue;
       }
       const code = result && (result.errCode === undefined ? result.errcode : result.errCode);
       const success = code === 0;
       await queue.finish(reminder.key, {status: success ? 'sent' : code === undefined ? 'unknown' : 'failed', finishedAt: at,
-        error: success ? '' : String(result && (result.errMsg || result.errmsg) || '发送结果未确认').slice(0, 300)});
+        errorCode: Number.isInteger(code) ? code : null, error: success ? '' : String(result && (result.errMsg || result.errmsg) || '发送结果未确认').slice(0, 300)});
       if (success) report.sent++; else report.failed++;
     }
     return {ok: true, ...report};
   }
-  return {register, disable, status, run};
+  return {register, disable, status, run, runForOwner};
 }
 
 function createReminderQueue(db) {
   const collection = 'life_todo_reminders';
+  let initializing = null;
+  async function withCollection(work) {
+    try { return await work(); }
+    catch (error) {
+      const message = [error.code, error.errMsg, error.message].filter(Boolean).join(' ');
+      if (!/DATABASE_COLLECTION_NOT_EXIST|Db or Table not exist|collection (?:not exists|does not exist)/i.test(message)) throw error;
+      // 只初始化固定的提醒集合；权限错误、索引错误和普通文档缺失不触发建表。
+      if (!initializing) initializing = (async () => {
+        try { await db.createCollection(collection); }
+        catch (createError) {
+          const details = [createError.code, createError.errMsg, createError.message].filter(Boolean).join(' ');
+          if (!/DATABASE_COLLECTION_EXIST\b|already exists?|collection exists/i.test(details)) throw createError;
+        }
+      })().finally(() => { initializing = null; });
+      await initializing;
+      return work();
+    }
+  }
   const read = async (source, key) => (await source.collection(collection).doc(key).get()).data;
   return {
-    async get(key) { return read(db, key); },
+    async get(key) { return withCollection(() => read(db, key)); },
     async put(key, value) {
-      return db.runTransaction(async tx => {
+      return withCollection(() => db.runTransaction(async tx => {
         const existing = await read(tx, key);
         // 仅新授权可更新尚未尝试发送的旧提醒；已发出或结果不明的截止时间不能重发。
         if (existing) {
@@ -109,19 +145,23 @@ function createReminderQueue(db) {
         }
         const next = {...value, subscriptionVersion: (existing && existing.subscriptionVersion || 0) + 1};
         await tx.collection(collection).doc(key).set({data: next}); return next;
-      });
+      }));
     },
     async disable(key, value) {
-      return db.runTransaction(async tx => {
+      return withCollection(() => db.runTransaction(async tx => {
         const existing = await read(tx, key);
         if (existing && ['sending', 'sent', 'failed', 'unknown'].includes(existing.status)) return existing;
-        const next = {...existing, ...value, status: 'disabled', subscriptionVersion: (existing && existing.subscriptionVersion || 0) + 1};
-        await tx.collection(collection).doc(key).set({data: next}); return next;
-      });
+        const patch = {...value, status: 'disabled', subscriptionVersion: (existing && existing.subscriptionVersion || 0) + 1};
+        const document = tx.collection(collection).doc(key);
+        // 读取结果带有只读 _id；更新现有记录时只提交业务字段。
+        if (existing) await document.update({data: patch});
+        else await document.set({data: patch});
+        return {...existing, ...patch};
+      }));
     },
     async list(at) {
       // 每轮限制 40 条，防止扫描/发送超出 60 秒函数超时；余下任务由下一轮处理。
-      const result = await db.collection(collection).where({status: 'pending', remindAt: db.command.lte(at)}).orderBy('remindAt', 'asc').limit(40).get();
+      const result = await withCollection(() => db.collection(collection).where({status: 'pending', remindAt: db.command.lte(at)}).orderBy('remindAt', 'asc').limit(40).get());
       return result.data.map(row => ({...row, key: row._id}));
     },
     async claim(key, expectedEpoch = 0, expectedSubscriptionVersion) {

@@ -90,6 +90,30 @@ test('an explicit WeChat rejection is marked failed rather than an uncertain del
   assert.equal([...rows.values()][0].status, 'failed');
 });
 
+test('missing or invalid cloud API tickets leave the reminder pending for a valid scheduled invocation', async () => {
+  const {createReminders} = require('../cloudfunctions/lifeButler/reminders');
+  for (const message of ['subscribeMessage.send:fail Invalid wxCloudApiToken', 'subscribeMessage.send:fail missing wxCloudApiToken']) {
+    const {queue, state, rows} = setup(); let attempts = 0;
+    const runner = createReminders({records: {load: async () => state}, queue, config: templateConfig, now: () => 1000000,
+      send: async () => { if (++attempts === 1) throw Object.assign(Error(message), {errCode: -501007}); return {errCode: 0}; }});
+    await runner.register('owner', {id: 'a', dueAt: 3600000});
+    assert.equal((await runner.run(1800000)).failed, 1);
+    assert.equal([...rows.values()][0].status, 'pending');
+    assert.equal((await runner.status('owner', {ids: ['a']})).reminders[0].retrying, true);
+    assert.equal((await runner.run(1860000)).sent, 1); await runner.run(1920000);
+    assert.equal(attempts, 2); assert.equal([...rows.values()][0].status, 'sent');
+  }
+});
+
+test('other SDK parameter errors remain uncertain and are not blindly retried', async () => {
+  const {createReminders} = require('../cloudfunctions/lifeButler/reminders');
+  const {queue, state, rows} = setup(); let attempts = 0;
+  const runner = createReminders({records: {load: async () => state}, queue, config: templateConfig, now: () => 1000000,
+    send: async () => { attempts++; throw Object.assign(Error('invalid parameters'), {errCode: -501007}); }});
+  await runner.register('owner', {id: 'a', dueAt: 3600000}); await runner.run(1800000); await runner.run(1860000);
+  assert.equal(attempts, 1); assert.equal([...rows.values()][0].status, 'unknown');
+});
+
 test('production queue transactions persist a single registration and claim, and query due pending reminders only', async () => {
   const {Database} = require('./helpers/database.cjs');
   const {createReminderQueue} = require('../cloudfunctions/lifeButler/reminders');
@@ -144,15 +168,15 @@ test('an old timer snapshot cannot claim or cancel a newly authorized reminder e
   assert.equal(await queue.claim('a', 2), true);
 });
 
-test('cloud entry refuses client-triggered batch sends and only registers tasks owned by the caller', async () => {
+test('cloud entry scopes identity-bearing tests to their owner and recognizes trusted timers with a residual OPENID', async () => {
   const fs = require('node:fs'), vm = require('node:vm'), path = require('node:path');
   const {createRequire} = require('node:module');
   const {Database} = require('./helpers/database.cjs');
   const db = new Database(), sent = [], at = Date.now(), dueAt = at + 120000;
-  let owner = 'owner';
+  let owner = 'owner', source = 'wx_devtools';
   const realRequire = createRequire(path.resolve(__dirname, '../cloudfunctions/lifeButler/index.js'));
   const module = {exports: {}};
-  const sdk = {init() {}, database: () => db, getWXContext: () => ({OPENID: owner}), openapi: {subscribeMessage: {send: async data => {sent.push(data); return {errCode: 0};}}}};
+  const sdk = {init() {}, database: () => db, getWXContext: () => ({OPENID: owner, SOURCE: source}), openapi: {subscribeMessage: {send: async data => {sent.push(data); return {errCode: 0};}}}};
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../cloudfunctions/lifeButler/index.js'), 'utf8'), {module, exports: module.exports,
     require: name => name === 'wx-server-sdk' ? sdk : name === './shared/reminder-config' ? {...templateConfig, templateId: 'template'} : realRequire(name)});
   const service = createService(require('../cloudfunctions/lifeButler/repository').createRepository(db));
@@ -161,12 +185,26 @@ test('cloud entry refuses client-triggered batch sends and only registers tasks 
   const main = module.exports.main;
   owner = 'intruder'; assert.equal((await main({action: 'reminderRegister', id: 'a', dueAt})).ok, false);
   owner = 'owner'; assert.equal((await main({action: 'reminderRegister', id: 'a', dueAt})).ok, true);
-  assert.equal((await main({Type: 'Timer', TriggerName: 'todoDueReminders'})).ok, false); assert.equal(sent.length, 0);
-  owner = undefined;
+  assert.equal((await service('other', {action: 'commit', operationId: 'initial', generation: 'g0', changes: [{kind: 'todos', id: 'b', expectedVersion: 0,
+    value: {id: 'b', title: '其他用户', dueAt, done: false, createdAt: at, images: []}}]})).ok, true);
+  owner = 'other'; assert.equal((await main({action: 'reminderRegister', id: 'b', dueAt})).ok, true);
+  owner = 'owner';
+  const manual = await main({Type: 'Timer', TriggerName: 'todoDueReminders'});
+  assert.equal(manual.ok, false); assert.equal(manual.code, 'WECHAT_TRIGGER_REQUIRED');
+  assert.equal(sent.length, 0, 'console tests must not claim reminders without a WeChat cloud API ticket');
+  source = 'wx_client';
+  assert.equal((await main({Type: 'Timer', TriggerName: 'todoDueReminders', SOURCE: 'wx_trigger'})).sent, 1);
+  assert.equal(sent[0].touser, 'owner');
+  assert.equal(sent.length, 1, 'a client cannot process another owner by spoofing an event source');
+  // A real timer must run even if instance reuse left an OPENID in the SDK context.
+  source = 'wx_trigger';
+  assert.equal((await main({Type: 'Timer', TriggerName: 'todoDueReminders'})).sent, 1);
+  assert.equal(sent[1].touser, 'other');
+  owner = undefined; source = undefined;
   assert.equal((await main({action: 'reminderRegister', id: 'a', dueAt})).ok, false);
   assert.equal((await main({Type: 'Timer', TriggerName: 'unrecognized'})).ok, false);
-  assert.equal((await main({Type: 'Timer', TriggerName: 'todoDueReminders'})).sent, 1);
-  await main({Type: 'Timer', TriggerName: 'todoDueReminders'}); assert.equal(sent.length, 1);
+  assert.equal((await main({Type: 'Timer', TriggerName: 'todoDueReminders'})).sent, 0);
+  await main({Type: 'Timer', TriggerName: 'todoDueReminders'}); assert.equal(sent.length, 2);
 });
 
 test('client requests subscription from a tap and registers only acceptance; rejection does not save a reminder', async () => {

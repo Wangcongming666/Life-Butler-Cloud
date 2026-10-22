@@ -1,6 +1,21 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {MemoryRepository}=require('./helpers/memory-cloud.cjs'),{createService}=require('../cloudfunctions/lifeButler/service'),{createClient}=require('./helpers/client.cjs');
 async function setup(){const c=createClient(createService(new MemoryRepository()));await c.sync.start();const p=c.page('todo');p.onLoad({});await p.onShow();p.setData({todos:[{id:'album',title:'图片待办',images:['/tmp/a.jpg','/tmp/b.jpg','/tmp/c.jpg']}]});return {c,p};}
+
+test('one photo opens the full-screen preview directly without mounting a gallery list',async()=>{
+ const {c,p}=await setup();p.setData({todos:[{id:'single',title:'单图待办',images:['/tmp/only.jpg']}]});
+ const opened=[];c.wx.previewImage=options=>opened.push(options);
+ await p.previewTodoImage({currentTarget:{dataset:{id:'single'}}});
+ assert.equal(opened.length,1);assert.equal(opened[0].current,'/tmp/only.jpg');assert.deepEqual(Array.from(opened[0].urls),['/tmp/only.jpg']);
+ assert.equal(p.data.galleryMounted,false);assert.equal(p.data.galleryOpen,false);assert.equal(p.data.zoomMounted,false);p.onUnload();
+});
+
+test('two photos still open the gallery list before zooming',async()=>{
+ const {c,p}=await setup();p.setData({todos:[{id:'pair',title:'双图待办',images:['/tmp/a.jpg','/tmp/b.jpg']}]});
+ let nativeCalls=0;c.wx.previewImage=()=>nativeCalls++;
+ await p.previewTodoImage({currentTarget:{dataset:{id:'pair',index:1}}});
+ assert.equal(p.data.galleryMounted,true);assert.equal(p.data.galleryImages.length,2);assert.equal(p.data.galleryCurrent,1);assert.equal(nativeCalls,0);p.onUnload();
+});
 test('album opens on the selected thumbnail and keeps swipe position when reopened',async()=>{
  const {p}=await setup();p.onTodoImageChange({currentTarget:{dataset:{id:'album'}},detail:{current:1}});assert.equal(p.data.imageIndexes.album,1);
  p.previewTodoImage({currentTarget:{dataset:{id:'album'}}});assert.equal(p.data.galleryMounted,true);assert.equal(p.data.galleryCurrent,1);assert.equal(p.data.galleryImages.length,3);

@@ -64,3 +64,73 @@ test('failed cancellation restores the confirmed on state and reports failure', 
   assert.equal(p.data.todos[0].notificationEnabled, true);
   assert.ok(c.notices.some(n => n.title === '通知设置未保存')); p.onUnload();
 });
+
+test('cloud cancellation errors retain a traceable request ID without exposing database internals', async () => {
+  const {c, todo, api} = await setup(); await api.register('user', todo);
+  const p = c.page('todo'); p.onLoad({}); await p.onShow();
+  const original = c.wx.cloud.callFunction;
+  c.wx.cloud.callFunction = async options => options.data.action === 'reminderDisable'
+    ? {requestID: 'trace-disable-123', result: {ok: false, code: 'REMINDER_ERROR', message: 'document.update:fail database internal details'}}
+    : original(options);
+  await p.onNotificationChange({currentTarget: {dataset: {id: todo.id}}, detail: {value: false}});
+  const notice = c.notices.find(n => n.title === '通知设置未保存');
+  assert.match(notice.content, /trace-disable-123/);
+  assert.doesNotMatch(notice.content, /database|document.update/);
+  assert.equal(p.data.todos[0].notificationEnabled, true);
+  p.onUnload();
+});
+
+test('ordinary subscription cancellation stays off without an error modal and the next tap can authorize', async () => {
+  const {c, todo, api} = await setup(), p = c.page('todo'); p.onLoad({}); await p.onShow();
+  let requests = 0;
+  c.wx.getSetting = options => options.success({subscriptionsSetting: {mainSwitch: true, itemSettings: {}}});
+  c.wx.requestSubscribeMessage = options => { requests++; options.success({[config.templateId]: requests === 1 ? 'reject' : 'accept'}); };
+  const event = {currentTarget: {dataset: {id: todo.id}}, detail: {value: true}};
+  await p.onNotificationChange(event);
+  assert.equal(p.data.todos[0].notificationEnabled, false); assert.equal(p.data.todos[0].notificationLocked, false); assert.equal(p.data.remindingId, '');
+  assert.equal(c.notices.some(notice => notice.title === '通知设置未保存'), false);
+  assert.equal((await api.status('user', {ids: [todo.id]})).reminders[0].enabled, false);
+  await p.onNotificationChange(event); assert.equal(requests, 2); assert.equal(p.data.todos[0].notificationEnabled, true); p.onUnload();
+});
+
+test('a remembered rejection or disabled WeChat master switch offers settings without treating them as new consent', async () => {
+  for (const masterOff of [false, true]) {
+    const {c, todo, api} = await setup(), p = c.page('todo'); p.onLoad({}); await p.onShow();
+    let requests = 0, opened = 0, allowed = false;
+    c.wx.requestSubscribeMessage = options => {
+      requests++;
+      if (allowed) options.success({[config.templateId]: 'accept'});
+      else if (masterOff) options.fail({errCode: 20004, errMsg: 'The main switch is switched off'});
+      else options.success({[config.templateId]: 'reject'});
+    };
+    c.wx.getSetting = options => { assert.equal(options.withSubscriptions, true); options.success({subscriptionsSetting: {mainSwitch: !masterOff, itemSettings: {[config.templateId]: 'reject'}}}); };
+    c.wx.openSetting = options => { opened++; assert.equal(options.withSubscriptions, true); allowed = true; options.success({subscriptionsSetting: {mainSwitch: true, itemSettings: {[config.templateId]: 'accept'}}}); };
+    const event = {currentTarget: {dataset: {id: todo.id}}, detail: {value: true}};
+    await p.onNotificationChange(event);
+    const recovery = c.notices.find(notice => notice.confirmText === '去设置'); assert.ok(recovery);
+    assert.equal(p.data.todos[0].notificationEnabled, false); assert.equal(p.data.todos[0].notificationLocked, false);
+    await recovery.success({confirm: true});
+    assert.equal(opened, 1); assert.equal(requests, 1);
+    assert.equal((await api.status('user', {ids: [todo.id]})).reminders[0].enabled, false, 'changing settings does not authorize a one-time notification');
+    await p.onNotificationChange(event);
+    assert.equal(requests, 2); assert.equal(p.data.todos[0].notificationEnabled, true); p.onUnload();
+  }
+});
+
+test('settings lookup failure and a transient authorization error never leave the switch locked', async () => {
+  for (const temporaryFailure of [false, true]) {
+    const {c, todo} = await setup(), p = c.page('todo'); p.onLoad({}); await p.onShow();
+    let requests = 0;
+    c.wx.getSetting = options => options.fail({errMsg: 'temporary failure'});
+    c.wx.requestSubscribeMessage = options => {
+      requests++;
+      if (requests > 1) options.success({[config.templateId]: 'accept'});
+      else if (temporaryFailure) options.fail({errCode: 10005, errMsg: 'Cannot show subscribe message UI'});
+      else options.success({[config.templateId]: 'reject'});
+    };
+    const event = {currentTarget: {dataset: {id: todo.id}}, detail: {value: true}};
+    await p.onNotificationChange(event);
+    assert.equal(p.data.todos[0].notificationEnabled, false); assert.equal(p.data.todos[0].notificationLocked, false); assert.equal(p.data.remindingId, '');
+    await p.onNotificationChange(event); assert.equal(p.data.todos[0].notificationEnabled, true); p.onUnload();
+  }
+});

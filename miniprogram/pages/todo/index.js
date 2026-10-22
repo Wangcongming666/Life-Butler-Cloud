@@ -15,7 +15,7 @@ function rangeTime(date, time) {
 
 require('../../utils/page-sync').definePage({
   data: {
-    todos: [], pending: 0, completed: 0, overdueCount: 0, alerts: [], scrollTarget: '', filter: 1, remindingId: '',
+    todos: [], pending: 0, completed: 0, overdueCount: 0, alerts: [], alertsExpanded: false, scrollTarget: '', filter: 1, remindingId: '',
     notificationStates: {}, notificationStatesLoaded: false, notificationStateError: '',
     query: '', sort: 0, rangeVisible: false, imageIndexes: {}, galleryMounted: false, galleryOpen: false, galleryImages: [], galleryStates: [], galleryCurrent: 0, galleryId: '', galleryTitle: '', galleryScrollTarget: '', zoomMounted: false, zoomOpen: false, zoomSource: '', zoomImageStyle: '', zoomTransform: '', zoomError: false,
     rangeActive: false, rangeStart: null, rangeEnd: null, rangeStartDate: '', rangeStartTime: '',
@@ -38,6 +38,7 @@ require('../../utils/page-sync').definePage({
     }
   },
   openAlert(e) { wx.navigateTo({ url: '/pages/life/index?type=' + e.currentTarget.dataset.type + '&id=' + encodeURIComponent(e.currentTarget.dataset.id) }); },
+  toggleAlerts() { this.setData({alertsExpanded: !this.data.alertsExpanded}); },
   async refreshReminderStates() {
     if (this.data.remindingId) return;
     const token = (this._reminderStateToken || 0) + 1; this._reminderStateToken = token;
@@ -48,7 +49,7 @@ require('../../utils/page-sync').definePage({
       this.setData({notificationStates: states, notificationStatesLoaded: true, notificationStateError: ''});
     } catch (error) {
       if (token !== this._reminderStateToken) return;
-      this.setData({notificationStatesLoaded: false, notificationStateError: error.message || '通知状态读取失败'});
+      this.setData({notificationStatesLoaded: false, notificationStateError: reminders.errorMessage(error)});
     }
     await this.refresh();
   },
@@ -64,7 +65,16 @@ require('../../utils/page-sync').definePage({
       const state = {id: todo.id, dueAt: todo.dueAt, status: result.status, enabled: result.status === 'pending' || result.status === 'sending'};
       this.setData({notificationStates: Object.assign({}, this.data.notificationStates, {[todo.id]: state})});
       wx.showToast({title: state.enabled ? '已开启到期通知' : result.status === 'sent' ? '该任务已发送过通知' : '已关闭到期通知', icon: 'none'});
-    } catch (error) { wx.showModal({title: '通知设置未保存', content: error.message, showCancel: false}); }
+    } catch (error) {
+      if (error.code === 'SUBSCRIPTION_REJECTED') wx.showToast({title: '已取消开启通知，可再次开启', icon: 'none'});
+      else if (error.code === 'SUBSCRIPTION_SETTINGS_REQUIRED') wx.showModal({title: '允许接收通知', content: error.message,
+        confirmText: '去设置', cancelText: '暂不开启', success: async result => {
+          if (!result.confirm) return;
+          try { await reminders.openSettings(); wx.showToast({title: '请再次开启到期通知', icon: 'none'}); }
+          catch (settingsError) { wx.showToast({title: settingsError.message, icon: 'none'}); }
+        }});
+      else wx.showModal({title: '通知设置未保存', content: reminders.errorMessage(error) + (error.requestId ? '\n请求编号：' + error.requestId : ''), showCancel: false});
+    }
     finally {
       this.setData({remindingId: ''});
       await this.refresh();
@@ -97,7 +107,7 @@ require('../../utils/page-sync').definePage({
         return Object.assign({}, item, {
         notificationEnabled: !item.done && item.dueAt > now && notification.enabled,
         notificationLocked: !this.data.notificationStatesLoaded || ['sending', 'sent', 'failed', 'unknown'].includes(notification.status),
-        notificationText: !this.data.notificationStatesLoaded ? (this.data.notificationStateError ? '通知设置暂不可用' : '正在读取通知设置') : labels[notification.status] || '关闭',
+        notificationText: !this.data.notificationStatesLoaded ? (this.data.notificationStateError ? '通知设置暂不可用' : '正在读取通知设置') : notification.retrying ? '通知通道暂不可用，等待重试' : labels[notification.status] || '关闭',
         images: item.images || [],
         startText: item.startAt === undefined ? '' : store.dateText(item.startAt) + ' ' + store.timeText(item.startAt),
         notStarted: !item.done && item.startAt !== undefined && item.startAt > now,
@@ -203,6 +213,7 @@ require('../../utils/page-sync').definePage({
   previewTodoImage(e) {
     const todo = this.data.todos.find(item => item.id === e.currentTarget.dataset.id);
     if (!todo || !todo.images || !todo.images.length) return;
+    if (todo.images.length === 1) return cloudMedia.preview({current: todo.images[0], urls: todo.images.slice()});
     const selected = e.currentTarget.dataset.index === undefined ? this.data.imageIndexes[todo.id] || 0 : Number(e.currentTarget.dataset.index);
     const current = Number.isInteger(selected) && selected >= 0 && selected < todo.images.length ? selected : 0;
     const sameAlbum = this.data.galleryMounted && this.data.galleryId === todo.id && todo.images.length === this.data.galleryImages.length && todo.images.every((source, index) => source === this.data.galleryImages[index]);

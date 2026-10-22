@@ -30,6 +30,8 @@
 
 在 `life_todo_reminders` 添加复合索引：status 升序、remindAt 升序，名称可用 `status_remindAt`。
 
+新版 `lifeButler` 在首次读取、登记或定时扫描时，若明确发现 `life_todo_reminders` 尚未创建，会尝试自动创建后重试。仍需在控制台核对集合权限为“仅管理端可读写”，并配置上述复合索引。创建权限不足、索引缺失或网络故障不会被当成“未开启通知”；页面保留待办操作，只显示简短提示和“重试”。部署新版云函数前，旧版本仍可能返回集合缺失错误。
+
 ## 3. 部署业务云函数
 
 在开发者工具中将 `cloudfunctions` 关联到目标环境。右键 **`cloudfunctions/lifeButler` → 上传并部署：云端安装依赖**。
@@ -91,7 +93,7 @@ wx.cloud.callFunction({
 
 1. 当前已按公众平台详情接入模板编号 **28327「任务截止日期提醒」**，模板 ID 为 `-aoXoECaHTnZ-41yWU47RekHdc295XkLN6cvNa8WgpM`，类型为一次性订阅。
 2. `miniprogram/utils/reminder-config.js` 已填写四个字段：`titleKey: 'thing1'`（任务名称）、`timeKey: 'time3'`（截止日期）、`remainingKey: 'thing4'`（剩余时间）、`noteKey: 'thing5'`（温馨提示）。发送时按北京时间显示截止日期与时间，任务名称最多 20 字，剩余时间按发送时刻向上取整为分钟（如“剩余30分钟”），温馨提示为“待办即将到期，请及时完成”。更换模板时须同步核对全部字段。模板 ID 不是 AppID，也不需要 AppSecret。
-3. 正式发布使用 `miniprogramState: 'formal'`；体验版验收可设为 `'trial'`，开发版设为 `'developer'`。修改后运行 `npm run sync-shared`，使客户端与云端采用同一模板配置。
+3. 当前未上线联调使用 `miniprogramState: 'developer'`；体验版验收用 `'trial'`，正式发布前改为 `'formal'`。该参数控制通知点击后打开的版本，不会补充或修复云调用票据。修改后运行 `npm run sync-shared`，使客户端与云端采用同一模板配置。
 4. 按第 2 节创建 `life_todo_reminders`、设置管理端权限及 `status_remindAt` 索引。
 5. 上传并部署完整 `cloudfunctions/lifeButler`，包含 `shared/reminder-config.js`。确认云调用权限包含 `subscribeMessage.send`。右键云函数选择“上传触发器”或在控制台部署 `config.json` 中的触发器：名称 `todoDueReminders`，类型 timer，Cron `0 * * * * * *`（每分钟）。代码上传成功不代表触发器也已部署，请在控制台确认启用。
 6. 上传匹配配置的小程序版本，在真机验收订阅授权及通知跳转。订阅授权由用户开启待办卡片的“到期通知”开关触发，页面加载或后台运行不会自动弹出授权。重新部署 `lifeButler` 以包含 `reminderStatus`、`reminderDisable` 接口，否则页面会提示通知设置暂不可用，点击重试可重新读取。
@@ -110,9 +112,19 @@ wx.cloud.callFunction({
 
 ### 真机验收
 
-- [ ] 配置正确的模板及字段后，新任务“到期通知”开关默认关闭，开启时出现微信授权；拒绝或调用失败时显示“通知设置未保存”并恢复已确认状态，不误显示开启。
+真实发送必须用手机小程序授权，并等待通过微信开发者工具上传的定时触发器执行。**不要用控制台“云端测试”模拟 Timer 验证真实微信发送**：即使有 OPENID，也可能没有有效 `wxCloudApiToken`。新版对 `wx_devtools`、`wx_localdebug` 来源的模拟定时事件返回 `WECHAT_TRIGGER_REQUIRED`，不认领任何提醒。依据见 [CloudBase 云调用票据限制](https://docs.cloudbase.net/faq/knowledge/missing-wxcloudapitoken-error)。
+
+排查顺序：在微信开发者工具右键完整 `lifeButler` 上传并部署，再右键“上传触发器”；使用手机新增一个 5 分钟后到期的待办、开启通知并允许订阅，然后关闭小程序等待下一轮定时检查。新版按 SDK 可信 `SOURCE` 识别真正的定时触发，不再仅凭 OPENID 是否为空判断。日志中的 `todo-reminders:start` 应显示 `source: "wx_trigger"`。在 `todo-reminders:result` 中，`sent`、`cancelled`、`failed` 分别是本轮成功、取消、失败数量；失败原因查看对应提醒记录的 `error`。
+
+若接口明确返回 `Invalid wxCloudApiToken` 或 `missing wxCloudApiToken`，新版保留 `pending`、记录 `lastAttemptAt` 和错误，让有效的后续定时调用重试；小程序显示“通知通道暂不可用，等待重试”。仅精确匹配这两类明确未受理错误；普通网络故障及其他参数错误仍保留 `unknown`，不会盲目重发。旧版本已经写入 `unknown` 的记录不会自动重置，请用新任务验收，避免将其他结果不明的记录误重发。
+
+本地修改不会自动更新云端，需重新上传部署完整 `lifeButler`；已经过期的提醒不会补发。若真正的 `wx_trigger` 调用仍遇到票据错误，再核对云函数权限中的 `subscribeMessage.send`、小程序 AppID 与环境关联，以及触发器是否从微信 IDE 上传。
+
+- [ ] 配置正确的模板及字段后，新任务“到期通知”开关默认关闭，开启时出现微信授权；未获授权时不登记提醒、恢复关闭状态，不误显示开启。
+- [ ] 普通点击“取消”只提示已取消，开关保持关闭且可立即重试。若微信保存了拒绝选择或关闭订阅总开关，页面提供“去设置”；在设置中恢复接收后，返回再次开启开关并重新授权，才登记一次提醒。仅修改微信设置不自动登记。模板被后台封禁时显示限制说明，不能通过用户设置绕过。
 - [ ] 开启后另一台设备进入待办页能看到开启；关闭后另一台设备刷新能看到关闭，且尚未发送的提醒不再发送。
 - [ ] 关闭再开启需重新授权，旧定时器快照不能抢占新订阅；断网关闭失败时仍显示已确认开启并提示失败。
+- [ ] 关闭已开启的通知时只更新业务状态，不将读取结果中的系统只读 `_id` 写回。关闭成功后另一设备能看到关闭；首次取消、设置读取失败或短暂授权失败都不会永久锁住开关。
 - [ ] 为未来 5 分钟到期的未完成任务同意订阅，退出小程序，等待下一轮定时检查，微信收到一条包含任务名称与截止时间的通知。
 - [ ] 点击通知进入对应待办；已被其他设备删除时显示“该待办已不存在”。
 - [ ] 为未来一小时到期的任务开启提醒，确认截止前 30 分钟之外不发送；进入窗口后发送一次。

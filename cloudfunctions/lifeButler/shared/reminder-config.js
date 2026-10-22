@@ -3,5 +3,6 @@
 module.exports = {
   templateId: '-aoXoECaHTnZ-41yWU47RekHdc295XkLN6cvNa8WgpM',
   titleKey: 'thing1', timeKey: 'time3', remainingKey: 'thing4', noteKey: 'thing5',
-  miniprogramState: 'formal'
+  // 当前为未上线的开发联调；体验版用 trial，正式上线前改回 formal。
+  miniprogramState: 'developer'
 };

@@ -1,5 +1,24 @@
-.controls { padding-bottom: 8rpx; }
-.todo-status-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.todo-header.header { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; max-width: 840px; align-self: center; padding: 12px 16px 8px; }
+.todo-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; min-width: 0; }
+.todo-header .todo-page-title { font-size: 24px; line-height: 1.4; }
+.todo-count { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.todo-header .todo-add-button { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto; min-height: 44px; margin: 0; padding: 0 16px; font-size: 14px; line-height: 1.5; border-radius: 12px; }
+.body { width: 100%; max-width: 840px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+.todo-controls { margin-bottom: 12px; padding: 0 0 4px; border-bottom: 1px solid var(--border); }
+.todo-controls .field { height: 40px; padding: 0 12px; font-size: 14px; border-radius: 10px; }
+.todo-inline-notice { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; margin-bottom: 8px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.todo-inline-notice text { min-width: 0; overflow-wrap: anywhere; }
+.todo-inline-notice .small-action { flex: 0 0 auto; width: auto; min-height: 44px; margin: 0; padding: 8px 12px; font-size: 13px; line-height: 28px; color: var(--accent); }
+.todo-reminders { margin-bottom: 12px; }
+.todo-reminders .todo-reminder-summary { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 4px 0; border-radius: 0; background: transparent; color: var(--muted); text-align: left; font-size: 12px; line-height: 1.5; }
+.todo-reminder-summary > text:first-child, .todo-reminder-summary > text:last-child { flex: 0 0 auto; }
+.todo-reminder-preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.todo-reminder-details { padding: 0 12px; background: var(--soft); border-radius: 12px; }
+.todo-reminder-item { display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 8px 0; gap: 2px; font-size: 13px; overflow-wrap: anywhere; }
+.todo-reminder-item + .todo-reminder-item { border-top: 1px solid var(--border); }
+.font-large .todo-page-title { font-size: 28px; }
+.font-large .todo-count, .font-large .todo-reminder-summary, .font-large .todo-inline-notice { font-size: 14px; }
+.todo-status-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
 .todo-status-tabs .status-tab { display: flex; align-items: center; justify-content: center; flex: 1; width: auto; min-height: 44px; margin: 0; padding: 8px; background: transparent; color: var(--muted); font-size: 14px; line-height: 1.5; border-radius: 10px; }
 .todo-status-tabs .status-tab-active { background: var(--soft); color: var(--ink); font-weight: 600; }
 .todo-status-tabs .status-tab::after { border: none; }
@@ -38,9 +57,6 @@
 .font-large .range-value, .font-large .range-actions .range-action { font-size: 15px; }
 .filter-row { margin-top: 12rpx; }
 .filter { min-height: 88rpx; line-height: 88rpx; color: #61776d; font-size: 24rpx; }
-.todo-create { display: flex; align-items: center; gap: 16px; }
-.todo-create-copy { flex: 1 1 0%; min-width: 0; }
-.todo-create .todo-create-button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto; margin: 0; min-height: 44px; padding: 0 18px; font-size: 14px; line-height: 44px; white-space: nowrap; }
 .todo-card { padding: 16px 16px 8px; border-radius: 16px; }
 .todo-main { display: flex; align-items: flex-start; gap: 8px; width: 100%; min-width: 0; }
 /* size=mini + explicit flex basis neutralize native button auto width on both clients. */
